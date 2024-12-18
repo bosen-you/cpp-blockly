@@ -28,3 +28,6 @@
 
 - [C Blockly](https://hueyanchen.github.io/)
 - [專案網站](https://ericbobxd.github.io/C-Blockly/)
+
+## License
+This project is licensed under the Apache License 2.0. See the [LICENSE](./LICENSE) file for details.
