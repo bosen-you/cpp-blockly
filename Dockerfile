@@ -11,10 +11,12 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 RUN python3 -m pip install --upgrade pip &&\
-    pip install fastapi jinja2 uvicorn
+    pip install fastapi jinja2 uvicorn docker python-multipart
 RUN apt-get update && apt-get install vim -y
 
-WORKDIR /app
-COPY . /app
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", $PORT]
+WORKDIR /app
+COPY . .
+
+EXPOSE $PORT
+CMD uvicorn main:app --host 0.0.0.0 --post $PORT
