@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/blockly/9.2.1/blockly.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/blockly/9.2.1/blocks_compressed.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -11,6 +12,59 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
     <title>C++ Blockly</title>
     <style>
+        /* 改變工具箱顏色 */
+        .blocklyToolboxDiv {
+            background-color: rgba(187, 187, 187, 0.9) !important;
+            border-right: 2px solid #bbb; /* 添加分界線，提升層次感 */
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1); /* 添加陰影效果 */
+        }
+
+        /* 工具箱選中分類的背景色與文字樣式 */
+        .blocklyTreeRow {
+            transition: background-color 0.2s, color 0.2s; /* 添加平滑過渡效果 */
+            margin: 2px 0; /* 添加分類間距 */
+            border-radius: 4px; /* 添加圓角 */
+            padding: 4px 8px; /* 增加內邊距，提升點擊區域 */
+        }
+
+        /* 當工具箱分類被選中時 */
+        .blocklyTreeRowSelected {
+            background-color: #ffffff !important; /* 淺灰色選中效果 */
+            color: white !important; /* 選中後文字變白 */
+        }
+
+        /* 工具箱分類標籤 */
+        .blocklyTreeLabel {
+            font-family: Arial, sans-serif; /* 更清晰的字體 */
+            font-size: 14px; /* 提升可讀性 */
+            color: black; /* 預設文字顏色保持黑色 */
+        }
+
+        /* 飛出區域背景色 */
+        .blocklyFlyoutBackground {
+            fill: #ccc !important; /* 半透明背景，突出工具箱 */
+            transition: fill 0.3s ease-in-out; /* 平滑過渡效果 */
+        }
+
+        /* 飛出區域的區塊間距 */
+        .blocklyFlyout .blocklyBlock {
+            margin: 4px 0; /* 增加區塊之間的間距 */
+        }
+
+        /* 工具箱滾動條 */
+        .blocklyScrollbarBackground {
+            fill: #e0e0e0 !important; /* 更亮的灰色背景 */
+        }
+
+        .blocklyScrollbarHandle {
+            fill: #888 !important; /* 手柄保持中灰色 */
+            rx: 4px; /* 圓角滾動條手柄 */
+        }
+
+        .blocklyScrollbarHorizontal, .blocklyScrollbarVertical {
+            transition: fill 0.2s; /* 添加過渡效果 */
+        }
+
         /* 防止整頁滾動 */
         html, body {
             margin: 0;
@@ -56,7 +110,6 @@
         header .actions button.compile { background-color: #0cc0df; color: #fff; }
         header .actions button.run { background-color: #ff914d; color: #fff; }
         header .actions button.run_compile { background-color: #69af23; color: #fff; }
-        header .actions button.debug { background-color: #ff3131; color: #fff; }
         header .actions button.toggle-view { background-color: #005ad1; color: #fff; }
         header .actions button.help { background-color: #a458b9; color: #fff; }
 
@@ -67,13 +120,13 @@
         }
 
         .blockly-workspace, .code-view {
-            padding: 20px;
+            padding: 10px;
             overflow-y: auto; /* 僅允許內部滾動 */
             transition: flex 0.5s;
         }
 
         .blockly-workspace {
-            background-color: #e9ecef;
+            background-color: #dadada;
             height: auto;
             width: auto;
         }
@@ -108,6 +161,13 @@
             margin-bottom: 10px;
         }
 
+        footer {
+            text-align: center;
+            padding: 20px 0;
+            background-color: #333;
+            color: #ff3131;
+        }
+
         .input-output textarea {
             width: 96%;
             height: 100px;
@@ -136,47 +196,28 @@
         .code-only .blockly-workspace { flex: 0; display: none; }
         .code-only .code-view { flex: 1; }
 
-        #blockly-workspace {
-            height: auto;
-            width: auto;
-            background: #cccccc;
-        }
-
         /* Smaller Blockly block sizes */
         .blocklySvg {
             transform: scale(1.0);
             transform-origin: top left;
         }
 
-        /* Makes our label white. */
-        .blocklyTreeLabel {
-            color: black;
-        }
-
         /* Adds padding around the group of categories and separators. */
         .blocklyToolboxContents {
             padding: 0.01em;
-        }
-
-        /* Adds space between the categories, rounds the corners and adds space around the label. */
-        .blocklyTreeRow {
-            padding: 3px;
-            margin-bottom: 0.5em;
-            border-radius: 4px;
         }
     </style>
 </head>
 <body>
     <header>
         <h1>C++ Blockly</h1>
-        <div class="file-info">檔案名稱： <strong>main.cpp</strong></div>
+        <div class="file-info"></div>
         <div class="actions">
             <button class="compile">編譯</button>
             <button class="run">執行</button>
             <button class="run_compile">編譯&執行</button>
-            <button class="debug">除錯</button>
             <button class="toggle-view" id="toggle-button" onclick="toggleView()">切換模式</button>
-            <button class="help" onclick="window.location.href='https://hackmd.io/@cpp-blockly'">尋求幫助?</button>
+            <a href='https://hackmd.io/@cpp-blockly' target="_blank"><button class="help">尋求幫助?</button></a>
         </div>
     </header>
     <main id="main-container">
@@ -184,16 +225,19 @@
         <div class="code-view">
             <div class="input-output">
                 <div class="section">
-                    <h3>轉換程式碼 <button  onclick="copyText('code-output')">複製</button> <button onclick="downloadText('code-output', 'main.cpp')">下載</button></h3>
+                    <h3>轉換程式碼 <button onclick="copyText('code-output')">複製程式碼</button> <button onclick="downloadText('code-output', 'main.cpp')">下載程式碼</button></h3>
                 </div>
                 <div id="code-output"></div>
                 <div class="section">
-                    <h3>輸入測資 <button>複製測資</button> <button>送出測資</button> <button>重置測資</button></h3>
-                    <textarea placeholder="請在這裡輸入測資..."></textarea>
+                    <h3>輸入測資 <button onclick="copyText('textarea')">複製測資</button> <button id="sent_data">送出測資</button> <button id="reset">重置測資</button></h3>
+                    <textarea id="textarea" placeholder="請在這裡輸入測資..."></textarea>
                 </div>
                 <div class="section">
-                    <h3>編譯/執行結果 <button>複製結果</button> <button>下載結果</button></h3>
-                    <textarea readonly placeholder="結果將顯示在這裡..."></textarea>
+                    <h3>編譯/執行結果 <button onclick="copyText('report')">複製結果</button> <button onclick="downloadText('report', 'report.txt')">下載結果</button> <button id="reset_2">清除結果</button></h3>
+                    <textarea readonly placeholder="結果將顯示在這裡..." id="report"></textarea>
+                </div>
+                <div class="section">
+                    <footer>&copy; 2024 Bosen & EricbobXD.  All Rights Reserved.</footer>
                 </div>
             </div>
         </div>
@@ -225,7 +269,7 @@
 
                 // 重新置中
                 const xOffset = (metrics.viewWidth - metrics.contentWidth * 0.5) / 2.2;
-                const yOffset = (metrics.viewHeight - metrics.contentHeight * 0.5) / 3;
+                const yOffset = (metrics.viewHeight - metrics.contentHeight * 0.5) / 3.1;
                 workspace.scroll(xOffset, yOffset);
             }, 100); // 延遲 100 毫秒以確保 `zoomToFit` 生效
         }
@@ -235,41 +279,6 @@
     </script>
 
     <script>
-        class CustomCategory extends Blockly.ToolboxCategory {
-            /* Constructor for a custom category.
-            /** @override */
-            setSelected(isSelected) {
-                // We do not store the label span on the category, so use getElementsByClassName.
-                var labelDom = this.rowDiv_.getElementsByClassName('blocklyTreeLabel')[0];
-                if (isSelected) {
-                    // Change the background color of the div to white.
-                    this.rowDiv_.style.backgroundColor = "#b8b8b8";
-                    // Set the colour of the text to white.
-                    labelDom.style.color = 'white';
-                } else {
-                    // Set the background back to the original colour.
-                    this.rowDiv_.style.backgroundColor = this.colour_;
-                    // Set the text back to black.
-                    labelDom.style.color = 'black';
-                }
-                // This is used for accessibility purposes.
-                Blockly.utils.aria.setState( /** @type {!Element} */ (this.htmlDiv_),
-                    Blockly.utils.aria.State.SELECTED, isSelected);
-            }
-
-            addColourBorder_(colour) {
-                this.rowDiv_.style.backgroundColor = colour;
-            }
-            constructor(categoryDef, toolbox, opt_parent) {
-                super(categoryDef, toolbox, opt_parent);
-            }
-        }
-
-        Blockly.registry.register(
-            Blockly.registry.Type.TOOLBOX_ITEM,
-            Blockly.ToolboxCategory.registrationName,
-            CustomCategory, true);
-
         Blockly.ContextMenuRegistry.registry.register({
             id: 'help_custom',
             weight: 100,
@@ -287,198 +296,262 @@
             shift: false
         });
 
-        const toolbox =
-            `
-                <xml>
-                    <category name="其他延伸模組" colour="black">
-                        <category name="序列容器 Vector" colour="#6A5ACD">
-                            <block type="define_vector"></block>
-                            <block type="push_back"></block>
-                            <block type="emplace_back"></block>
-                            <block type="pop_back"></block>
-                            <block type="vector_insert"></block>
-                            <block type="vector_erase"></block>
-                            <block type="vector_clear"></block>
-                            <block type="vector_size"></block>
-                            <block type="vector_empty"></block>
-
-                            <label text="Vector 迭代器"></label>
-
-                            <block type="vec_begin"></block>
-                            <block type="vec_end"></block>
-                            <block type="vec_rbegin"></block>
-                            <block type="vec_rend"></block>
-                            
-                        </category>
-
-                        <category name="關聯式容器 Set" colour="#ff5d04">
-                            <block type="create_set"></block>
-                            <block type="set_insert"></block>
-                            <block type="set_erase"></block>
-                            <block type="set_empty"></block>
-                            <block type="set_find"></block>
-
-                            <label text="set 迭代器"></label>
-
-                            <block type="set_begin"></block>
-                            <block type="set_end"></block>
-                        </category>
-
-                        <category name="陣列 Map" colour="#20b2aa">
-                            <block type="create_map"></block>
-                            <block type="map_insert"></block>
-                            <block type="map[i]"></block>
-                            <block type="map_clear"></block>
-                            <block type="map_size"></block>
-                            <block type="map_empty"></block>
-                            <block type="map_first"></block>
-                            <block type="map_second"></block>
-                            <block type="map_find"></block>
-
-                            <label text="map 迭代器"></label>
-
-                            <block type="map_begin"></block>
-                            <block type="map_end"></block>
-                            <block type="map_rbegin"></block>
-                            <block type="map_rend"></block>
-                        </category>
-
-                        <category name="陣列 Array" colour="#fa8072">
-                            <block type="create_array"></block>
-                            <block type="array_name_block"></block>
-                            <block type="array_content"></block>
-                            <block type="array[i]"></block>
-                        </category>
-
-                        <category name="演算法 algorithm" colour="#3cb371">
-                            <block type="sort"></block>
-                            <block type="max"></block>
-                            <block type="min"></block>
-                            <block type="find"></block>
-                        </category>
-
-                        <category name="數學 Math" colour="#00A9E6">
-                            <block type="math_sqrt"></block>
-                            <block type="math_abs"></block>
-                            <block type="math_sine"></block>
-                            <block type="math_cosine"></block>
-                            <block type="math_tangent"></block>
-                            <block type="math_ceil"></block>
-                            <block type="math_floor"></block>
-                            <block type="math_random"></block>
-                        </category> 
-
-                        <category name="時間 Ctime" colour="#eac800">
-                            <block type="get_current_timestamp"></block>
-                            <block type="calculate_time_difference"></block>
-                            <block type="convert_to_local_time"></block>
-                            <block type="convert_to_utc_time"></block>
-                            <block type="format_time_string"></block>
-                            <block type="set_time_structure"></block>
-                            <block type="read_time_structure_member"></block>
-                            <block type="get_current_local_time"></block>
-                            <block type="get_current_utc_time"></block>
-                        </category> 
-                    </category>
-
-                    <sep></sep>
-
-                    <category name="主程式框架" colour="#FF69B4">
-                        <label text="警告! int main()一個檔案只能有一個!!!"></label>
-
-                        <block type="include_bits/stdc++.h">
-                            <next>
-                                <block type="using_namespace_std">
-                                    <next>
-                                        <block type="main_block"></block>
-                                    </next>
-                                </block>
-                            </next>
-                        </block>
-                    </category>
-
-                    <category name="自定義函式" colour="#BA55D3">
-                        <block type="function_definition_void"></block>
-                        <block type="function_definition"></block>
-                        <block type="function_call"></block>
-                    </category>
-
-                    <category name="自定義變數" colour="#DABD00">
-                        <block type="declare_variable"></block>
-                        <block type="variable_assignment"></block>
-                        <block type="get_variable"></block>
-                    </category>
-
-                    <sep></sep>
-
-                    <category name="輸入與輸出" colour="#24B324">
-                        <block type="cin_block"></block>
-                        <block type="cout_block"></block>
-                        <block type="scanf_block"></block>
-                        <block type="printf_block"></block>
-                        <block type="boost_ios_sync"></block>
-                        <block type="boost_cin_cout_tie"></block>
-                    </category>
-
-                    <category name="數學與運算" colour="#29A1CD">
-                        <block type="logic_operators"></block>
-                        <block type="or_and_xor"></block>
-                        <block type="var_caculacte"></block>
-                        <block type="math_caculacte"></block>
-                        <block type="number"></block>
-                        <block type="false"></block>
-                        <block type="true"></block>
-                        <block type="nullptr"></block>
-                        <block type="logic_not"></block>
-                    </category>
-
-                    <category name="條件與迴圈" colour="#00abea">
-                        <block type="controls_if"></block>
-                        <block type="switch_block">
-                            <statement name="DO">
-                                <block type="case_block">
-                                    <next>
-                                        <block type="default_block"></block>
-                                    </next>
-                                </block>
-                            </statement>
-                        </block>
-                        <block type="case_block"></block>
-                        <block type="for_block"></block>
-                        <block type="while_block"></block>
-                        <block type="break_block"></block>
-                        <block type="continue_block"></block>
-                        <block type="return_block"></block>
-                    </category>
-
-                    <category name="擴充模組" colour="#71b700">
-                        <block type="commas"></block>
-                        <block type="math_multiply"></block>
-                        <block type="math_devide"></block>
-                        <block type="math_plus"></block>
-                        <block type="math_subtract"></block>
-                        <block type="math_percent"></block>
-                    </category>
-
-                    <category name="文本操作" colour="#FF8C00">
-                        <block type="text"></block>
-                        <block type="add_line"></block>
-                        <block type="tab"></block>
-                        <block type="comment_block"></block>
-                    </category>
-
-                    <sep></sep>
-
-                    <category name="測試 Block" colour="#E60000">
-                        
-                    </category>
-                </xml>
-            `;
+        const toolbox = 
+        {
+            "kind": "categoryToolbox",
+            "contents": [
+              { // stl
+                "kind": "category",
+                "name": "STL模組",
+                "colour": "#D600D6",
+                "contents": [
+                  { // vector
+                    "kind": "category",
+                    "name": "序列容器 Vector",
+                    "colour": "#5C4AB6",
+                    "contents": [
+                      {"kind": "block", "type": "define_vector"},
+                      {"kind": "block", "type": "push_back"},
+                      {"kind": "block", "type": "emplace_back"},
+                      {"kind": "block", "type": "pop_back"},
+                      {"kind": "block", "type": "vector_insert"},
+                      {"kind": "block", "type": "vector_erase"},
+                      {"kind": "block", "type": "vector_clear"},
+                      {"kind": "block", "type": "vector_size"},
+                      {"kind": "block", "type": "vector_empty"},
+                      {"kind": "label", "text": "Vector 迭代器"},
+                      {"kind": "block", "type": "vec_begin"},
+                      {"kind": "block", "type": "vec_end"},
+                      {"kind": "block", "type": "vec_rbegin"},
+                      {"kind": "block", "type": "vec_rend"}
+                    ]
+                  },
+                  { // set
+                    "kind": "category",
+                    "name": "關聯式容器 Set",
+                    "colour": "#E65C00",
+                    "contents": [
+                      {"kind": "block", "type": "create_set"},
+                      {"kind": "block", "type": "set_insert"},
+                      {"kind": "block", "type": "set_erase"},
+                      {"kind": "block", "type": "set_empty"},
+                      {"kind": "block", "type": "set_find"},
+                      {"kind": "label", "text": "set 迭代器"},
+                      {"kind": "block", "type": "set_begin"},
+                      {"kind": "block", "type": "set_end"}
+                    ]
+                  },
+                  { // array
+                    "kind": "category",
+                    "name": "陣列 Array",
+                    "colour": "#F96A50",
+                    "contents": [
+                      {"kind": "block", "type": "create_array"},
+                      {"kind": "block", "type": "array_name_block"},
+                      {"kind": "block", "type": "array_content"},
+                      {"kind": "block", "type": "array[i]"}
+                    ]
+                  },
+                  { // map
+                    "kind": "category",
+                    "name": "陣列 Map",
+                    "colour": "#1AA197",
+                    "contents": [
+                      {"kind": "block", "type": "create_map"},
+                      {"kind": "block", "type": "map_insert"},
+                      {"kind": "block", "type": "map[i]"},
+                      {"kind": "block", "type": "map_clear"},
+                      {"kind": "block", "type": "map_size"},
+                      {"kind": "block", "type": "map_empty"},
+                      {"kind": "block", "type": "map_first"},
+                      {"kind": "block", "type": "map_second"},
+                      {"kind": "block", "type": "map_find"},
+                      {"kind": "label", "text": "map 迭代器"},
+                      {"kind": "block", "type": "map_begin"},
+                      {"kind": "block", "type": "map_end"},
+                      {"kind": "block", "type": "map_rbegin"},
+                      {"kind": "block", "type": "map_rend"}
+                    ]
+                  },
+                  { // algorithm
+                    "kind": "category",
+                    "name": "演算法 algorithm",
+                    "colour": "#2E8B57",
+                    "contents": [
+                      {"kind": "block", "type": "sort"},
+                      {"kind": "block", "type": "max"},
+                      {"kind": "block", "type": "min"},
+                      {"kind": "block", "type": "find"}
+                    ]
+                  },
+                  { // math
+                    "kind": "category",
+                    "name": "數學 Math",
+                    "colour": "#009CD5",
+                    "contents": [
+                      {"kind": "block", "type": "math_ceil"},
+                      {"kind": "block", "type": "math_floor"},
+                      {"kind": "block", "type": "math_sqrt"},
+                      {"kind": "block", "type": "math_abs"},
+                      {"kind": "block", "type": "math_random"},
+                      {"kind": "block", "type": "math_sine"},
+                      {"kind": "block", "type": "math_cosine"},
+                      {"kind": "block", "type": "math_tangent"}
+                    ]
+                  },
+                  { // Ctime
+                    "kind": "category",
+                    "name": "時間 Ctime",
+                    "colour": "#D4A017",
+                    "contents": [
+                      {"kind": "block", "type": "get_current_timestamp"},
+                      {"kind": "block", "type": "calculate_time_difference"},
+                      {"kind": "block", "type": "convert_to_local_time"},
+                      {"kind": "block", "type": "convert_to_utc_time"},
+                      {"kind": "block", "type": "format_time_string"},
+                      {"kind": "block", "type": "set_time_structure"},
+                      {"kind": "block", "type": "read_time_structure_member"},
+                      {"kind": "block", "type": "get_current_local_time"},
+                      {"kind": "block", "type": "get_current_utc_time"}
+                    ]
+                  }
+                ]
+              },
+              {"kind": "sep"},
+              { // main structure
+                "kind": "category",
+                "name": "基礎框架",
+                "colour": "#C0569F",
+                "contents": [
+                  {"kind": "label", "text": "警告! int main()一個檔案只能有一個!!!"},
+                  {
+                    "kind": "block",
+                    "type": "include_bits/stdc++.h",
+                    "next": {
+                        "block": {
+                        "kind": "block",
+                        "type": "using_namespace_std",
+                        "next": {
+                            "block": {
+                            "kind": "block",
+                            "type": "main_block"
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              },
+              { // function
+                "kind": "category",
+                "name": "自定義函式",
+                "colour": "#db00db",
+                "contents": [
+                  {"kind": "block", "type": "function_definition_void"},
+                  {"kind": "block", "type": "function_definition"},
+                  {"kind": "block", "type": "function_call"}
+                ]
+              },
+              { // variable
+                "kind": "category",
+                "name": "變數與資料類型",
+                "colour": "#C9A200",
+                "contents": [
+                  {"kind": "block", "type": "declare_variable"},
+                  {"kind": "block", "type": "var_equal"},
+                  {"kind": "block", "type": "get_var"}
+                ]
+              },
+              { // pointer
+                "kind": "category",
+                "name": "自定義指標",
+                "colour": "#5f9ea0",
+                "contents": [
+                  {"kind": "label", "text": "pointer"},
+                  {"kind": "block", "type": "declare_pointer"},
+                  {"kind": "block", "type": "ptr_equal"},
+                  {"kind": "block", "type": "get_ptr"},
+                  {"kind": "label", "text": "reference"},
+                  {"kind": "block", "type": "ref_equal"},
+                  {"kind": "block", "type": "get_ref"},
+                  {"kind": "block", "type": "nullptr"}
+                ]
+              },
+              {"kind": "sep"},
+              { // text and more
+                "kind": "category",
+                "name": "文本操作",
+                "colour": "#FF8C00",
+                "contents": [
+                  {"kind": "block", "type": "text"},
+                  {"kind": "block", "type": "add_line"},
+                  {"kind": "block", "type": "tab"},
+                  {"kind": "block", "type": "comment_block"}
+                ]
+              },
+              { // mode
+                "kind": "category",
+                "name": "基礎運算模組",
+                "colour": "#64A800",
+                "contents": [
+                  {"kind": "block", "type": "commas"},
+                  {"kind": "block", "type": "math_multiply"},
+                  {"kind": "block", "type": "math_devide"},
+                  {"kind": "block", "type": "math_plus"},
+                  {"kind": "block", "type": "math_subtract"},
+                  {"kind": "block", "type": "math_percent"}
+                ]
+              },
+              { // input/output
+                "kind": "category",
+                "name": "資料輸入與輸出",
+                "colour": "#2EC832",
+                "contents": [
+                  {"kind": "block", "type": "cin_block"},
+                  {"kind": "block", "type": "cout_block"},
+                  {"kind": "block", "type": "printf_block"},
+                  {"kind": "block", "type": "boost_ios_sync"},
+                  {"kind": "block", "type": "boost_cin_cout_tie"}
+                ]
+              },
+              { // math and caculate
+                "kind": "category",
+                "name": "數學與運算",
+                "colour": "#1F91B5",
+                "contents": [
+                  {"kind": "block", "type": "logic_operators"},
+                  {"kind": "block", "type": "or_and_xor"},
+                  {"kind": "block", "type": "var_caculacte"},
+                  {"kind": "block", "type": "math_caculacte"},
+                  {"kind": "block", "type": "number"},
+                  {"kind": "block", "type": "false"},
+                  {"kind": "block", "type": "true"},
+                  {"kind": "block", "type": "logic_not"}
+                ]
+              },
+              { // condition and loop
+                "kind": "category",
+                "name": "條件與迴圈",
+                "colour": "#00ABEA",
+                "contents": [
+                  {"kind": "block", "type": "controls_if"},
+                  {"kind": "block", "type": "for_block"},
+                  {"kind": "block", "type": "while_block"},
+                  {"kind": "block", "type": "switch_block"},
+                  {"kind": "block", "type": "break_block"},
+                  {"kind": "block", "type": "continue_block"},
+                  {"kind": "block", "type": "return_block"}
+                ]
+              }
+            ]
+        };
 
         var workspace = Blockly.inject('blockly-workspace', {
             toolbox: toolbox,
             scrollbars: true,
             trashcan: true,
+            plugins: {
+            },
             grid: {
                 spacing: 20,
                 length: 3,
@@ -496,7 +569,6 @@
             renderer: 'zelos'/*minimalist*/
         });
 
-        let toolboxXml = Blockly.Xml.textToDom(toolbox);
 
         function updateVariableCategory() {
             let variableCategory = toolboxXml.querySelector('category[name="自定義變數"]');
@@ -616,7 +688,7 @@
             return code;
         };
 
-        function updateCodeOutput() {
+        async function updateCodeOutput() {
             var code = Blockly.Cpp.workspaceToCode(workspace); // 獲取 Blockly 生成的 C++ 代碼
             var lines = code.split('\n'); // 按行分割代碼
             var outputElement = document.getElementById('code-output');
@@ -668,11 +740,52 @@
                     }).value;
                 }
             });
+            
+            let idid = '';
+            function checkbuttonID(buttonId){
+                if (buttonId === 'c'){
+                    alert('compile code');
+                } else if (buttonId === 'r'){
+                    alert('run code');
+                } else if (buttonId === 'r_c'){
+                    alert('compile and run code');
+                }
+                idid = buttonId;
+            }
+
+            
+            document.getElementById('c').addEventListener('click', function() {
+                checkbuttonID(this.id);
+            })
+            document.getElementById('r').addEventListener('click', function() {
+                checkbuttonID(this.id);
+            })
+
+            document.getElementById('r_c').addEventListener('click', function() {
+                checkbuttonID(this.id);
+            })
+            
+            const response = await fetch('http://127.0.0.1:8000/compile', {
+                    method : "POST",
+                    headers : {
+                        "Content-Type" : "application/json"
+                    },
+                    body: JSON.stringify({id_code : code , action : idid})
+            })
+            
+            const result = await response.json();
+            
+            if (result.status === "error"){
+                sent_data = result.message;
+            } else if (result.status === "compilation_error"){
+                sent_data = result.message + '\n' + result.detail;
+            } else{
+                sent_data = result.message;
+            }
 
             // 初次渲染 Markdown 區域
             renderMarkdown();
         }
-
 
         function copyText(elementId) {
             const text = document.getElementById(elementId).textContent;
@@ -690,8 +803,163 @@
             link.click();
         }
 
+        const sent_data = document.getElementById('sent_data');
+        const reset = document.getElementById('reset');
+        const textarea = document.getElementById('textarea');
+
+        let save_data = '';
+
+        sent_data.addEventListener('click', () => {
+            save_data = textarea.value;
+            alert(`測資已送出，原始碼如下:\n${save_data}`)
+        });
+
+        reset.addEventListener('click', () => {
+            textarea.value = '';
+            alert('測資已清除')
+        });
+
+        const reset_2 = document.getElementById('reset_2');
+        const report = document.getElementById('report');
+
+        reset_2.addEventListener('click', () => {
+            report.value = '結果將顯示在這裡...';
+            alert('編譯執行結果歷史紀錄已刪除')
+        });
+
         delete Blockly.Blocks['controls_if'];
         delete Blockly.Blocks['text'];
+
+        // 定義 switch_block
+        Blockly.Blocks['switch_block'] = {
+            init: function () {
+                this.appendValueInput("SWITCH_VALUE")
+                    .setCheck(null)
+                    .appendField("切換");
+                this.appendStatementInput("DEFAULT")
+                    .setCheck(null)
+                    .appendField("預設執行");
+                this.setMutator(new Blockly.Mutator(['case_mutator']));
+                this.setColour("#00abea");
+                this.setTooltip("Switch 語句");
+                this.setHelpUrl("");
+                this.caseCount_ = 0; // 初始化 case 計數器
+            },
+
+            mutationToDom: function () {
+                const container = Blockly.utils.xml.createElement('mutation');
+                container.setAttribute('caseCount', this.caseCount_);
+                return container;
+            },
+
+            domToMutation: function (xmlElement) {
+                this.caseCount_ = parseInt(xmlElement.getAttribute('caseCount'), 10);
+                this.updateShape_();
+            },
+
+            decompose: function (workspace) {
+                const containerBlock = workspace.newBlock('switch_mutator');
+                containerBlock.initSvg();
+
+                let connection = containerBlock.nextConnection;
+                for (let i = 0; i < this.caseCount_; i++) {
+                    const caseBlock = workspace.newBlock('case_mutator');
+                    caseBlock.initSvg();
+                    connection.connect(caseBlock.previousConnection);
+                    connection = caseBlock.nextConnection;
+                }
+
+                return containerBlock;
+            },
+
+            compose: function (containerBlock) {
+                let caseBlock = containerBlock.nextConnection.targetBlock();
+                const connections = [];
+
+                while (caseBlock) {
+                    connections.push(caseBlock.valueConnection_);
+                    caseBlock = caseBlock.nextConnection &&
+                                caseBlock.nextConnection.targetBlock();
+                }
+
+                this.caseCount_ = connections.length;
+                this.updateShape_();
+
+                for (let i = 0; i < this.caseCount_; i++) {
+                    Blockly.Mutator.reconnect(connections[i], this, 'CASE' + i);
+                }
+            },
+
+            updateShape_: function () {
+                // 移除舊的 CASE 輸入
+                for (let i = 0; i < this.caseCount_; i++) {
+                    if (this.getInput('CASE' + i)) {
+                        this.removeInput('CASE' + i);
+                    }
+                }
+
+                // 添加新的 CASE 輸入
+                for (let i = 0; i < this.caseCount_; i++) {
+                    this.appendValueInput('CASE' + i)
+                        .setCheck(null)
+                        .appendField("狀況 " + (i + 1) + " 執行");
+                    this.appendStatementInput('CASE_DO' + i)
+                        .setCheck(null)
+                        .appendField("動作");
+                }
+            }
+        };
+
+        // 定義 switch_mutator 用的輔助塊
+        Blockly.Blocks['switch_mutator'] = {
+            init: function () {
+                this.appendDummyInput()
+                    .appendField("切換的狀況數量")
+                    .appendField(new Blockly.FieldNumber(0, 0, Infinity, 1), 'CASE_COUNT');
+                this.setNextStatement(true);
+                this.setColour("#00abea");
+                this.setTooltip("");
+                this.setHelpUrl("");
+            }
+        };
+
+        Blockly.Blocks['case_mutator'] = {
+            init: function () {
+                this.appendDummyInput()
+                    .appendField("狀況");
+                this.setPreviousStatement(true);
+                this.setNextStatement(true);
+                this.setColour("#00abea");
+                this.setTooltip("");
+                this.setHelpUrl("");
+                this.valueConnection_ = null;
+            },
+
+            saveConnections: function (containerBlock) {
+                const input = this.getInput('CASE');
+                if (input && input.connection.isConnected()) {
+                    this.valueConnection_ = input.connection.targetConnection;
+                }
+            }
+        };
+
+        // 定義生成 C++ 代碼邏輯
+        Blockly.Cpp['switch_block'] = function (block) {
+            const switchValue = Blockly.Cpp.valueToCode(block, 'SWITCH_VALUE', Blockly.Cpp.ORDER_ATOMIC) || '()';
+            let code = `switch ${switchValue} {\n`;
+
+            for (let i = 0; i < block.caseCount_; i++) {
+                const caseValue = Blockly.Cpp.valueToCode(block, 'CASE' + i, Blockly.Cpp.ORDER_ATOMIC) || '0';
+                const caseCode = Blockly.Cpp.statementToCode(block, 'CASE_DO' + i);
+                code += `  case ${caseValue}:\n${caseCode}    break;\n`;
+            }
+
+            const defaultCode = Blockly.Cpp.statementToCode(block, 'DEFAULT');
+            code += `  default:\n${defaultCode}    break;\n`;
+
+            code += '}\n';
+            return code;
+        };
 
         //Add the Cpp blocks def.
         Blockly.defineBlocksWithJsonArray(
@@ -699,7 +967,7 @@
                 //initializaiton
                 { //#include <bits/stdc++.h>
                     "type": "include_bits/stdc++.h",
-                    "message0": "#include <bits/stdc++.h>",
+                    "message0": "引入萬能頭文件",
                     "nextStatement": null,
                     "colour": "#C00000",
                     "tooltip": "Include all",
@@ -707,13 +975,13 @@
                 },
                 { //int main
                     "type": "main_block",
-                    "message0": "int main()",
+                    "message0": "主程式框架",
                     "message1": "%1",
                     "args1": [{
                         "type": "input_statement",
                         "name": "DO"
                     }],
-                    "message2": "return 0",
+                    "message2": "回傳值: 0",
                     "colour": "#24B324",
                     "previousStatement": null,
                     "inputsInline": false,
@@ -722,7 +990,7 @@
                 },        
                 { //using namespace std
                     "type": "using_namespace_std",
-                    "message0": "using namespace std;",
+                    "message0": "使用std命名空間",
                     "previousStatement": null,
                     "nextStatement": null,
                     "colour": "#3d7fd6",
@@ -731,7 +999,7 @@
                 },
                 { //ios sync
                     "type": "boost_ios_sync",
-                    "message0": "ios::sync_with_stdio(0);",
+                    "message0": "輸入輸出同步禁用",
                     "previousStatement": null,
                     "nextStatement": null,
                     "colour": 160,
@@ -740,7 +1008,7 @@
                 },
                 { //cin tie
                     "type": "boost_cin_cout_tie",
-                    "message0": "cin & cout tie",
+                    "message0": "解除 cin 和 cout 的速度綁定",
                     "previousStatement": null,
                     "nextStatement": null,
                     "colour": 160,
@@ -751,7 +1019,7 @@
                 //data
                 { //text
                     "type": "text",
-                    "message0": "text %1",
+                    "message0": "文本 %1",
                     "args0": [{
                         "type": "field_input",
                         "name": "TEXT",
@@ -780,7 +1048,7 @@
                 },
                 { //number
                     "type": "number",
-                    "message0": "number %1",
+                    "message0": "數字 %1",
                     "args0": [{
                         "type": "field_number",
                         "name": "NUMBER",
@@ -793,7 +1061,7 @@
                 },
                 { //comment
                     "type": "comment_block",
-                    "message0": "// %1",
+                    "message0": "//註解 %1",
                     "args0": [{
                         "type": "field_input",
                         "name": "COMMENT",
@@ -809,13 +1077,13 @@
                 //condition
                 { //if
                     "type": "controls_if",
-                    "message0": "if %1",
+                    "message0": "如果 %1",
                     "args0": [{
                         "type": "input_value",
                         "name": "IF0",
                         "check": "Boolean"
                     }],
-                    "message1": "do %1",
+                    "message1": "執行 %1",
                     "args1": [{
                         "type": "input_statement",
                         "name": "DO0"
@@ -829,7 +1097,7 @@
                 },
                 { //for
                     "type": "for_block",
-                    "message0": "for %1 = %2 ; %3 ; %4 = %5 %6 ",
+                    "message0": "初始值 %1 = %2 循環條件 %3 迴圈條件 %4 = %5 執行%6 ",
                     "args0": [{
                             "type": "field_input",
                             "name": "VAR",
@@ -867,13 +1135,13 @@
                 },
                 { //while
                     "type": "while_block",
-                    "message0": "while (%1) {",
+                    "message0": "當 %1",
                     "args0": [{
                         "type": "input_value",
                         "name": "CONDITION",
                         "check": "Boolean"
                     }],
-                    "message1": "%1 }",
+                    "message1": "執行 %1",
                     "args1": [{
                         "type": "input_statement",
                         "name": "DO"
@@ -882,59 +1150,11 @@
                     "nextStatement": null,
                     "colour": "#00abea"
                 },
-                { //switch
-                    "type": "switch_block",
-                    "message0": "switch %1 %2",
-                    "args0": [{
-                            "type": "input_value",
-                            "name": "SWITCH_VALUE"
-                        },
-                        {
-                            "type": "input_statement",
-                            "name": "DO"
-                        }
-                    ],
-                    "colour": "#00abea",
-                    "previousStatement": null,
-                    "nextStatement": null,
-                    "tooltip": "Switch 語句",
-                    "helpUrl": ""
-                },
-                { //case
-                    "type": "case_block",
-                    "message0": "case %1 %2 break",
-                    "args0": [{
-                            "type": "input_value",
-                            "name": "CASE_VALUE"
-                        },
-                        {
-                            "type": "input_statement",
-                            "name": "DO"
-                        }
-                    ],
-                    "previousStatement": null,
-                    "nextStatement": null,
-                    "colour": "#00abea",
-                    "tooltip": "Case 語句",
-                    "helpUrl": ""
-                },
-                { //default
-                    "type": "default_block",
-                    "message0": "default %1 break",
-                    "args0": [{
-                        "type": "input_statement",
-                        "name": "DO"
-                    }],
-                    "previousStatement": null,
-                    "colour": "#00abea",
-                    "tooltip": "Default 語句",
-                    "helpUrl": ""
-                },
-                
+               
                 //stop
                 { //break
                     "type": "break_block",
-                    "message0": "break",
+                    "message0": "結束執行",
                     "colour": "#00abea",
                     "previousStatement": null,
                     "tooltip": "退出當前的循環或 switch 語句",
@@ -942,7 +1162,7 @@
                 },
                 { //continue
                     "type": "continue_block",
-                    "message0": "continue",
+                    "message0": "跳過並繼續",
                     "colour": "#00abea",
                     "previousStatement": null,
                     "tooltip": "跳過當前迴圈的剩餘部分，直接進入下一次迴圈",
@@ -950,7 +1170,7 @@
                 },
                 { //return
                     "type": "return_block",
-                    "message0": "return %1",
+                    "message0": "回傳值: %1",
                     "args0": [{
                         "type": "input_value",
                         "name": "RETURN_VALUE"
@@ -964,11 +1184,12 @@
                 //function
                 { //def function void
                     "type": "function_definition_void",
-                    "message0": "函式 型態void 名子%1 (變數%2){",
+                    "message0": "函式型態: void 名稱 %1 變數 %2",
                     "args0": [
                         {
                             "type" : "field_input",
                             "name" : "funcName",
+                            "text" : "MyFunction"
                         },
                         {
                             "type" : "input_value",
@@ -990,35 +1211,35 @@
                             ]
                         }
                     ],
-                    "colour": "#E60000",
+                    "colour": "#db00db",
                     "tooltip": "定義一個基本的 C++ 函數",
                     "helpUrl": ""
                 },
                 { //def function void
                     "type": "function_definition",
-                    "message0": "函式 型態%1 名子%2 (變數%3){",
+                    "message0": "函式型態: %1 名稱 %2 變數%3",
                     "args0": [{
                             "type": "field_dropdown",
                             "name": "TYPE",
                             "options": [
-                                ["void", "void"],
-                                ["int", "int"],
-                                ["float", "float"],
-                                ["double", "double"],
-                                ["char", "char"],
-                                ["string", "std::string"]
+                                ["整數", "int"],
+                                ["浮點數", "float"],
+                                ["雙重浮點數", "double"],
+                                ["字元", "char"],
+                                ["字串", "std::string"]
                             ]
                         },
                         {
                             "type" : "field_input",
                             "name" : "funcName",
+                            "text" : "MyFunction2"
                         },
                         {
                             "type" : "input_value",
                             "name" : "data",
                         }
                     ],
-                    "message1" : "%1 回傳值%2(如果型態是void只能加return)}",
+                    "message1" : "%1 回傳值 %2",
                     "args1" : [
                         {
                             "type" : "input_statement",
@@ -1029,23 +1250,25 @@
                             "name" : "expression"
                         }
                     ],
-                    "colour": "#E60000",
+                    "colour": "#db00db",
                     "tooltip": "定義一個基本的 C++ 函數",
                     "helpUrl": ""
                 },
                 { //cll function
                     "type": "function_call",
-                    "message0": "函式%1 %2",
+                    "message0": "函式 %1 %2",
                     "args0": [{
                             "type": "field_input",
                             "name": "funcName",
+                            "text": "MyFunction"
                         },
                         {
                             "type": "input_value",
-                            "name": "VALUE"
+                            "name": "VALUE",
+                            "text": "這裡放置變數"
                         }
                     ],
-                    "colour": "#E60000",
+                    "colour": "#db00db",
                     "previousStatement": null,
                     "nextStatement": null,
                     "tooltip": "調用一個函數",
@@ -1055,34 +1278,34 @@
                 //define variable
                 { //def variable
                     "type": "declare_variable",
-                    "message0" : "declare %1 %2 %3 變數名稱: %4 = %5",
+                    "message0" : "宣告 %1 %2 %3 變數名稱: %4 = %5",
                     "args0" : [
                         {
                             "type": "field_dropdown",
                             "name": "const",
                             "options": [
-                                ["const", "const"],
-                                ["no", "no"]
+                                ["固定", "const"],
+                                ["不固定", "no"]
                             ]
                         },
                         {
                             "type": "field_dropdown",
                             "name": "unsigned",
                             "options": [
-                                ["unsigned", "unsigned"],
-                                ["no", "no"]
+                                ["全部取正", "unsigned"],
+                                ["有正有負", "no"]
                             ]
                         },
                         {
                             "type": "field_dropdown",
                             "name": "TYPE",
                             "options": [
-                                ["int", "int"],
-                                ["float", "float"],
-                                ["double", "double"],
-                                ["char", "char"],
-                                ["string", "std::string"],
-                                ["long long", "long long"]
+                                ["整數", "int"],
+                                ["浮點數", "float"],
+                                ["雙重浮點數", "double"],
+                                ["字元", "char"],
+                                ["字串", "std::string"],
+                                ["更長的整數", "long long"]
                             ]
                         },
                         {
@@ -1101,8 +1324,8 @@
                     "helpurl" : ""
                 },
                 { //variable equals
-                    "type": "variable_assignment",
-                    "message0": "variable %1 = %2",
+                    "type": "var_equal",
+                    "message0": "變數 %1 = %2",
                     "args0": [{
                             "type": "field_input",
                             "name": "VAR_NAME",
@@ -1120,8 +1343,8 @@
                     "helpUrl": ""
                 },
                 { //get variable vaule
-                    "type": "get_variable",
-                    "message0": "%1",
+                    "type": "get_var",
+                    "message0": "變數 %1",
                     "args0": [{
                         "type": "field_input",
                         "name": "VAR_NAME",
@@ -1132,7 +1355,7 @@
                     "tooltip": "獲取變數的值",
                     "helpUrl": ""
                 },                
-                
+              
                 //operation
                 { //& | ^ Not
                     "type": "or_and_xor",
@@ -1145,10 +1368,10 @@
                             "type": "field_dropdown",
                             "name": "OPERATOR",
                             "options": [
-                                ["&&", "AND"],
-                                ["||", "OR"],
-                                ["^", "XOR"],
-                                ["!", "NOT"]
+                                ["且", "AND"],
+                                ["或", "OR"],
+                                ["XOR", "XOR"],
+                                ["否", "NOT"]
                             ]
                         },
                         {
@@ -1194,7 +1417,7 @@
                 },
                 { //logic not
                     "type": "logic_not",
-                    "message0": "!%1",
+                    "message0": "否 %1",
                     "args0": [{
                         "type": "input_value",
                         "name": "A"
@@ -1202,91 +1425,6 @@
                     "output": "Boolean",
                     "colour": "#29A1CD",
                     "tooltip": "Returns true if the condition is false.",
-                    "helpUrl": ""
-                },
-                
-                //input and output
-                { //printf
-                    "type": "printf_block",
-                    "message0": "printf(%1, %2)",
-                    "args0": [{
-                            "type": "input_value",
-                            "name": "FORMAT"
-                        },
-                        {
-                            "type": "input_value",
-                            "name": "VARIABLE"
-                        }
-                    ],
-                    "previousStatement": null,
-                    "nextStatement": null,
-                    "colour": "#24B324",
-                    "tooltip": "使用 printf 輸出格式化的字串",
-                    "helpUrl": ""
-                },
-                { //cin
-                    "type": "cin_block",
-                    "message0": "cin >> %1",
-                    "args0": [{
-                        "type": "input_value",
-                        "name": "VARIABLES"
-                    }],
-                    "inputsInline": true,
-                    "previousStatement": null,
-                    "nextStatement": null,
-                    "colour": "#24B324",
-                    "tooltip": "Inputs multiple values from the console.",
-                    "helpUrl": ""
-                },
-                { //cout
-                    "type": "cout_block",
-                    "message0": "cout << %1 %2",
-                    "args0": [{
-                            "type": "input_value",
-                            "name": "INPUT"
-                        },
-                        {
-                            "type": "field_dropdown",
-                            "name": "ENDL_OPTION",
-                            "options": [
-                                ["<< endl", "endl"],
-                                ["no endl", ""]
-                            ]
-                        }
-                    ],
-                    "inputsInline": true,
-                    "previousStatement": null,
-                    "nextStatement": null,
-                    "colour": "#24B324",
-                    "tooltip": "Outputs value to the console.",
-                    "helpUrl": ""
-                },
-                                
-                //bool
-                { //true
-                    "type": "true",
-                    "message0": "true",
-                    "output": "Boolean",
-                    "colour": "#29A1CD",
-                    "tooltip": "",
-                    "helpUrl": ""
-                },
-                { //false
-                    "type": "false",
-                    "message0": "false",
-                    "output": "boolean",
-                    "colour": "#29A1CD",
-                    "tooltip": "",
-                    "helpUrl": ""
-                },
-                
-                //pointer
-                { //null
-                    "type": "nullptr",
-                    "message0": "nullptr",
-                    "output": "Pointer",
-                    "colour": "#29A1CD",
-                    "tooltip": "",
                     "helpUrl": ""
                 },
                 { //var caculacte
@@ -1319,6 +1457,257 @@
                     "helpUrl": ""
                 },
 
+                //input and output
+                { //printf
+                    "type": "printf_block",
+                    "message0": "複雜輸出( %1, %2 )",
+                    "args0": [{
+                            "type": "input_value",
+                            "name": "FORMAT"
+                        },
+                        {
+                            "type": "input_value",
+                            "name": "VARIABLE"
+                        }
+                    ],
+                    "previousStatement": null,
+                    "nextStatement": null,
+                    "colour": "#24B324",
+                    "tooltip": "使用 printf 輸出格式化的字串",
+                    "helpUrl": ""
+                },
+                { //cin
+                    "type": "cin_block",
+                    "message0": "輸入 %1",
+                    "args0": [{
+                        "type": "input_value",
+                        "name": "VARIABLES"
+                    }],
+                    "inputsInline": true,
+                    "previousStatement": null,
+                    "nextStatement": null,
+                    "colour": "#24B324",
+                    "tooltip": "Inputs multiple values from the console.",
+                    "helpUrl": ""
+                },
+                { //cout
+                    "type": "cout_block",
+                    "message0": "輸出 %1 %2",
+                    "args0": [{
+                            "type": "input_value",
+                            "name": "INPUT"
+                        },
+                        {
+                            "type": "field_dropdown",
+                            "name": "ENDL_OPTION",
+                            "options": [
+                                ["換行", "endl"],
+                                ["不換行", ""]
+                            ]
+                        }
+                    ],
+                    "inputsInline": true,
+                    "previousStatement": null,
+                    "nextStatement": null,
+                    "colour": "#24B324",
+                    "tooltip": "Outputs value to the console.",
+                    "helpUrl": ""
+                },
+                                
+                //bool
+                { //true
+                    "type": "true",
+                    "message0": "True",
+                    "output": "Boolean",
+                    "colour": "#29A1CD",
+                    "tooltip": "",
+                    "helpUrl": ""
+                },
+                { //false
+                    "type": "false",
+                    "message0": "False",
+                    "output": "boolean",
+                    "colour": "#29A1CD",
+                    "tooltip": "",
+                    "helpUrl": ""
+                },
+                
+                //pointer
+                { //nullptr
+                    "type": "nullptr",
+                    "message0": "nullptr",
+                    "output": "Pointer",
+                    "colour": "#5f9ea0",
+                    "tooltip": "",
+                    "helpUrl": ""
+                },
+                { //declare_pointer
+                    "type": "declare_pointer",
+                    "message0" : "宣告 %1 %2 %3 %4指標名稱: %5 = %6",
+                    "args0" : [
+                        {
+                            "type": "field_dropdown",
+                            "name": "const_ptr",
+                            "options": [
+                                ["固定指標位置", "const_ptr"],
+                                ["不固定指標位置", "no"]
+                            ]
+                        },
+                        {
+                            "type": "field_dropdown",
+                            "name": "unsigned",
+                            "options": [
+                                ["全部取正", "unsigned"],
+                                ["有正有負", "no"]
+                            ]
+                        },
+                        {
+                            "type": "field_dropdown",
+                            "name": "TYPE",
+                            "options": [
+                                ["整數", "int"],
+                                ["浮點數", "float"],
+                                ["雙重浮點數", "double"],
+                                ["字元", "char"],
+                                ["字串", "std::string"],
+                                ["更長的整數", "long long"]
+                            ]
+                        },
+                        {
+                            "type": "field_dropdown",
+                            "name": "const_var",
+                            "options": [
+                                ["固定變數大小", "const_var"],
+                                ["不固定變數大小", "no"]
+                            ]
+                        },
+                        {
+                            "type" : "field_input",
+                            "name" : "var_name"
+                        },
+                        {
+                            "type" : "input_value",
+                            "name" : "value"
+                        },
+                    ],
+                    "colour": "#5f9ea0",
+                    "previousStatement" : null,
+                    "nextStatement" : null,
+                    "tooltip" : "",
+                    "helpurl" : ""
+                },
+                { //declart_reference
+                    "type": "declare_reference",
+                    "message0" : "宣告 %1 %2 %3 位置名稱: %4 = %5",
+                    "args0" : [
+                        {   
+                            "type": "field_dropdown",
+                            "name": "const",
+                            "options": [
+                                ["固定變數位置", "const"],
+                                ["不固定變數位置", "no"]
+                            ]
+                        },
+                        {
+                            "type": "field_dropdown",
+                            "name": "unsigned",
+                            "options": [
+                                ["全部取正", "unsigned"],
+                                ["有正有負", "no"]
+                            ]
+                        },
+                        {
+                            "type": "field_dropdown",
+                            "name": "TYPE",
+                            "options": [
+                                ["整數", "int"],
+                                ["浮點數", "float"],
+                                ["雙重浮點數", "double"],
+                                ["字元", "char"],
+                                ["字串", "std::string"],
+                                ["更長的整數", "long long"],
+                            ]
+                        },
+                        {
+                            "type" : "field_input",
+                            "name" : "var_name"
+                        },
+                        {
+                            "type" : "input_value",
+                            "name" : "value"
+                        },
+                    ],
+                    "colour": "#5f9ea0",
+                    "previousStatement" : null,
+                    "nextStatement" : null,
+                    "tooltip" : "",
+                    "helpurl" : ""
+                },
+                { //ptr equal
+                    "type": "ptr_equal",
+                    "message0": "指標 %1 = %2",
+                    "args0": [{
+                            "type": "field_input",
+                            "name": "ptr_name",
+                            "text": "i"
+                        },
+                        {
+                            "type": "input_value",
+                            "name": "VALUE"
+                        }
+                    ],
+                    "colour": "#5f9ea0",
+                    "previousStatement": null,
+                    "nextStatement": null,
+                    "tooltip": "賦予指標新的值或算式",
+                    "helpUrl": ""
+                },
+                { //ref equal 
+                    "type": "ref_equal",
+                    "message0": "位置 %1 = %2",
+                    "args0": [{
+                            "type": "field_input",
+                            "name": "ref_name",
+                            "text": "i"
+                        },
+                        {
+                            "type": "input_value",
+                            "name": "VALUE"
+                        }
+                    ],
+                    "colour": "#5f9ea0",
+                    "previousStatement": null,
+                    "nextStatement": null,
+                    "tooltip": "賦予位置新的值或算式",
+                    "helpUrl": ""
+                },
+                { //get ptr value
+                    "type": "get_ptr",
+                    "message0": "指標 %1",
+                    "args0": [{
+                        "type": "field_input",
+                        "name": "ptr_name",
+                        "text": "i"
+                    }],
+                    "output": null,
+                    "colour": "#5f9ea0",
+                    "tooltip": "獲取指標的值",
+                    "helpUrl": ""
+                },
+                { //get ref value
+                    "type": "get_ref",
+                    "message0": "位置 %1",
+                    "args0": [{
+                        "type": "field_input",
+                        "name": "ref_name",
+                        "text": "i"
+                    }],
+                    "output": null,
+                    "colour": "#5f9ea0",
+                    "tooltip": "獲取位置的值",
+                    "helpUrl": ""
+                },
+                
                 //Standard Library
                 //math
                 { //math caculacte
@@ -1354,7 +1743,7 @@
                 },
                 { //sqrt
                     "type": "math_sqrt",
-                    "message0": "sqrt(%1)",
+                    "message0": "開根號(%1)",
                     "args0": [{
                         "type": "input_value",
                         "name": "X"
@@ -1366,7 +1755,7 @@
                 },
                 { //abs
                     "type": "math_abs",
-                    "message0": "abs(%1)",
+                    "message0": "絕對值(%1)",
                     "args0": [{
                         "type": "input_value",
                         "name": "A"
@@ -1414,7 +1803,7 @@
                 },
                 { //ceil
                     "type": "math_ceil",
-                    "message0": "ceil(%1)",
+                    "message0": "向上取整(%1)",
                     "args0": [{
                         "type": "input_value",
                         "name": "X"
@@ -1426,7 +1815,7 @@
                 },
                 { //floor
                     "type": "math_floor",
-                    "message0": "floor(%1)",
+                    "message0": "向下取整(%1)",
                     "args0": [{
                         "type": "input_value",
                         "name": "X"
@@ -1438,7 +1827,7 @@
                 },
                 { //random
                     "type": "math_random",
-                    "message0": "rand() % %1",
+                    "message0": "隨機取數 %1",
                     "args0": [{
                         "type": "input_value",
                         "name": "RANGE"
@@ -1457,12 +1846,12 @@
                             "type": "field_dropdown",
                             "name": "TYPE",
                             "options": [
-                                ["int", "int"],
-                                ["float", "float"],
-                                ["double", "double"],
-                                ["char", "char"],
-                                ["string", "std::string"],
-                                ["long long", "long long"]
+                                ["整數", "int"],
+                                ["浮整數", "float"],
+                                ["雙重浮點數", "double"],
+                                ["字元", "char"],
+                                ["字串", "std::string"],
+                                ["更長的整數", "long long"]
                             ]
                         },
                         {
@@ -1547,7 +1936,7 @@
                 },
                 { //vec empty
                     "type" : "vector_empty",
-                    "message0" : "判斷vec%1是否為空",
+                    "message0" : "判斷vec %1 是否為空",
                     "args0" : [
                         {
                             "type" : "field_input",
@@ -1560,7 +1949,7 @@
                 },
                 { //vector insert
                     "type" : "vector_insert",
-                    "message0" : "vector%1 在%2位置插入%3",
+                    "message0" : "vector %1 在 %2 位置插入 %3",
                     "args0" : [
                         {
                             "type" : "field_input",
@@ -1584,7 +1973,7 @@
                 },
                 { //vector erase
                     "type" : "vector_erase",
-                    "message0" : "vector%1 在%2位置刪除%3",
+                    "message0" : "vector %1 在 %2 位置刪除 %3",
                     "args0" : [
                         {
                             "type" : "field_input",
@@ -1630,7 +2019,7 @@
                 },
                 { //vec begin
                     "type": "vec_begin",
-                    "message0": "陣列%1的第一個(begin)",
+                    "message0": "陣列 %1 的第一個(begin)",
                     "args0": [{
                             "type": "field_input",
                             "name": "vec_name",
@@ -1644,7 +2033,7 @@
                 },
                 { //vec end
                     "type": "vec_end",
-                    "message0": "陣列%1的最後一個(end)",
+                    "message0": "陣列 %1 的最後一個(end)",
                     "args0": [{
                             "type": "field_input",
                             "name": "vec_name",
@@ -1658,7 +2047,7 @@
                 },
                 { //vec rbegin
                     "type": "vec_rbegin",
-                    "message0": "陣列%1的最後一個(rbegin)",
+                    "message0": "陣列 %1 的最後一個(rbegin)",
                     "args0": [{
                             "type": "field_input",
                             "name": "vec_name",
@@ -1672,7 +2061,7 @@
                 },
                 { //vec rend
                     "type": "vec_rend",
-                    "message0": "陣列%1的第一個(rend)",
+                    "message0": "陣列 %1 的第一個(rend)",
                     "args0": [{
                             "type": "field_input",
                             "name": "vec_name",
@@ -1688,30 +2077,30 @@
                 //map
                 { //create map
                     "type" : "create_map",
-                    "message0" : "資料型態 <%1, %2>, 陣列名稱 %3, 大小%4, 陣列內容%5",
+                    "message0" : "資料型態 <%1, %2>, 陣列名稱 %3, 大小 %4, 陣列內容 %5",
                     "args0" : [
                         {
                             "type": "field_dropdown",
                             "name": "TYPE1",
                             "options": [
-                                ["int", "int"],
-                                ["float", "float"],
-                                ["double", "double"],
-                                ["char", "char"],
-                                ["string", "std::string"],
-                                ["long long", "long long"]
+                                ["整數", "int"],
+                                ["浮點數", "float"],
+                                ["雙重浮點數", "double"],
+                                ["字元", "char"],
+                                ["字串", "std::string"],
+                                ["更長的整數", "long long"]
                             ]
                         },
                         {
                             "type": "field_dropdown",
                             "name": "TYPE2",
                             "options": [
-                                ["int", "int"],
-                                ["float", "float"],
-                                ["double", "double"],
-                                ["char", "char"],
-                                ["string", "std::string"],
-                                ["long long", "long long"]
+                                ["整數", "int"],
+                                ["浮點數", "float"],
+                                ["雙重浮點數", "double"],
+                                ["字元", "char"],
+                                ["字串", "std::string"],
+                                ["更長的整數", "long long"]
                             ]
                         },
                         {
@@ -1736,7 +2125,7 @@
                 },
                 { //map insert
                     "type" : "map_insert",
-                    "message0" : "map%1新增陣列元素{%2, %3}",
+                    "message0" : "map %1 新增陣列元素〔%2, %3〕",
                     "args0" :[
                         {
                             "type" : "field_input",
@@ -1758,7 +2147,7 @@
                 },
                 { //map[i]
                     "type" : "map[i]",
-                    "message0" : "map名稱%1, key: %2, value: %3",
+                    "message0" : "map名稱 %1, key: %2, value: %3",
                     "args0" : [
                         {
                             "type" : "field_input",
@@ -1780,7 +2169,7 @@
                 },
                 { //map begin
                     "type": "map_begin",
-                    "message0": "陣列%1的第一個(begin)",
+                    "message0": "陣列 %1 的第一個(begin)",
                     "args0": [{
                             "type": "field_input",
                             "name": "map_name",
@@ -1794,7 +2183,7 @@
                 },
                 { //map end
                     "type": "map_end",
-                    "message0": "陣列%1的最後一個(end)",
+                    "message0": "陣列 %1 的最後一個(end)",
                     "args0": [{
                             "type": "field_input",
                             "name": "map_name",
@@ -1808,7 +2197,7 @@
                 },
                 { //map rbegin
                     "type": "map_rbegin",
-                    "message0": "陣列%1的最後一個(rbegin)",
+                    "message0": "陣列 %1 的最後一個(rbegin)",
                     "args0": [{
                             "type": "field_input",
                             "name": "map_name",
@@ -1822,7 +2211,7 @@
                 },
                 { //map rend
                     "type": "map_rend",
-                    "message0": "陣列%1的第一個(rend)",
+                    "message0": "陣列 %1 的第一個(rend)",
                     "args0": [{
                             "type": "field_input",
                             "name": "map_name",
@@ -1863,7 +2252,7 @@
                 },
                 { //map empty
                 "type" : "map_empty",
-                "message0" : "判斷map%1是否為空",
+                "message0" : "判斷map %1 是否為空",
                 "args0" : [
                     {
                         "type" : "field_input",
@@ -1876,7 +2265,7 @@
                 },
                 { //map first
                     "type" : "map_first",
-                    "message0" : "map: %1, 位置: %2的key(first)",
+                    "message0" : "map: %1, 位置: %2 的key(first)",
                     "args0" : [
                         {
                             "type" : "field_input",
@@ -1894,7 +2283,7 @@
                 },
                 { //map second
                     "type" : "map_second",
-                    "message0" : "map: %1, 位置: %2的value(second)",
+                    "message0" : "map: %1, 位置: %2 的value(second)",
                     "args0" : [
                         {
                             "type" : "field_input",
@@ -1912,7 +2301,7 @@
                 },
                 { //map find
                     "type" : "map_find",
-                    "message0" : "map: %1 中尋找有沒有%2(key)值",
+                    "message0" : "map: %1 中尋找有沒有 %2 (key)值",
                     "args0" : [
                         {
                             "type" : "field_input",
@@ -1932,17 +2321,17 @@
                 //array
                 { //create array
                     "type": "create_array",
-                    "message0": "資料型態%1 , 陣列名稱%2 , 大小 : %3 , 陣列內容%4(可加可不佳)",
+                    "message0": "資料型態 %1 , 陣列名稱 %2 , 大小 : %3 , 陣列內容 %4 (可加可不加)",
                     "args0": [{
                             "type": "field_dropdown",
                             "name": "TYPE",
                             "options": [
-                                ["int", "int"],
-                                ["float", "float"],
-                                ["double", "double"],
-                                ["char", "char"],
-                                ["string", "std::string"],
-                                ["long long", "long long"]
+                                ["整數", "int"],
+                                ["浮點數", "float"],
+                                ["雙重浮點數", "double"],
+                                ["字元", "char"],
+                                ["字串", "std::string"],
+                                ["更長的整數", "long long"]
                             ]
                         },
                         {
@@ -1969,7 +2358,7 @@
                 },
                 { //array_name_block
                     "type": "array_name_block",
-                    "message0": "陣列%1",
+                    "message0": "陣列 %1",
                     "args0": [{
                             "type": "field_input",
                             "name": "array_name",
@@ -1984,7 +2373,7 @@
                 },
                 { //array_content
                     "type": "array_content",
-                    "message0": "陣列內容{%1}",
+                    "message0": "陣列內容〔%1〕",
                     "args0": [{
                         "type": "input_value",
                         "name": "content"
@@ -1996,7 +2385,7 @@
                 },
                 { //array[i]
                     "type" : "array[i]",
-                    "message0" : "陣列%1[%2]",
+                    "message0" : "陣列 %1 [%2]",
                     "args0" :[
                         {
                             "type" : "field_input",
@@ -2016,7 +2405,7 @@
                 //time
                 { //get current timestamp
                     "type": "get_current_timestamp",
-                    "message0": "Get Current Timestamp",
+                    "message0": "取得目前時間戳記",
                     "output": "time_t",
                     "colour": "#eac800",
                     "tooltip": "Returns the current time as a timestamp.",
@@ -2026,7 +2415,7 @@
                 },
                 { //calculate time difference
                     "type": "calculate_time_difference",
-                    "message0": "Time Difference between %1 and %2",
+                    "message0": "時間 %1 和 %2 秒差",
                     "args0": [
                         { "type": "input_value", "name": "END_TIME", "check": "time_t" },
                         { "type": "input_value", "name": "START_TIME", "check": "time_t" }
@@ -2040,7 +2429,7 @@
                 },
                 { //convert to local time
                     "type": "convert_to_local_time",
-                    "message0": "Convert %1 to Local Time",
+                    "message0": "轉換 %1 到本地時間",
                     "args0": [
                         { "type": "input_value", "name": "TIMESTAMP", "check": "time_t" }
                     ],
@@ -2053,7 +2442,7 @@
                 },
                 { //convert to utc time
                     "type": "convert_to_utc_time",
-                    "message0": "Convert %1 to UTC Time",
+                    "message0": "轉換 %1 到 UTC 時間",
                     "args0": [
                         { "type": "input_value", "name": "TIMESTAMP", "check": "time_t" }
                     ],
@@ -2066,7 +2455,7 @@
                 },
                 { //format time string
                     "type": "format_time_string",
-                    "message0": "Format Time %1 with Format %2",
+                    "message0": "格式化時間 %1 格式: %2",
                     "args0": [
                         { "type": "input_value", "name": "TIME_STRUCT", "check": "tm" },
                         { "type": "field_input", "name": "FORMAT", "text": "%Y-%m-%d %H:%M:%S" }
@@ -2080,7 +2469,7 @@
                 },
                 { //set time structure
                     "type": "set_time_structure",
-                    "message0": "Set Time Structure: Year %1 Month %2 Day %3 Hour %4 Minute %5 Second %6",
+                    "message0": "設定時間結構: 年 %1 月 %2 日 %3 小時 %4 分鐘 %5 秒 %6",
                     "args0": [
                         { "type": "input_value", "name": "YEAR", "check": "Number" },
                         { "type": "input_value", "name": "MONTH", "check": "Number" },
@@ -2098,15 +2487,15 @@
                 },
                 { //read time structure member
                     "type": "read_time_structure_member",
-                    "message0": "Read %1 from Time Structure %2",
+                    "message0": "讀取 %1 來源: %2",
                     "args0": [
                         { "type": "field_dropdown", "name": "MEMBER", "options": [
-                            ["Year", "tm_year"],
-                            ["Month", "tm_mon"],
-                            ["Day", "tm_mday"],
-                            ["Hour", "tm_hour"],
-                            ["Minute", "tm_min"],
-                            ["Second", "tm_sec"]
+                            ["年", "tm_year"],
+                            ["月", "tm_mon"],
+                            ["日", "tm_mday"],
+                            ["小時", "tm_hour"],
+                            ["分鐘", "tm_min"],
+                            ["秒", "tm_sec"]
                         ]},
                         { "type": "input_value", "name": "TIME_STRUCT", "check": "tm" }
                     ],
@@ -2119,7 +2508,7 @@
                 },
                 { //get current local time
                     "type": "get_current_local_time",
-                    "message0": "Get Current Local Time",
+                    "message0": "取得本地目前時間",
                     "output": "tm",
                     "colour": "#eac800",
                     "tooltip": "Returns the current local time as a tm structure.",
@@ -2129,7 +2518,7 @@
                 },
                 { //get current utc time
                     "type": "get_current_utc_time",
-                    "message0": "Get Current UTC Time",
+                    "message0": "取得準確 UTC 時間",
                     "output": "tm",
                     "colour": "#eac800",
                     "tooltip": "Returns the current UTC time as a tm structure.",
@@ -2141,18 +2530,18 @@
                 //set
                 { //create set
                     "type" : "create_set",
-                    "message0": "創建set 資料型態%1 , 名字 : %2 , 大小 : %3(可加可不加) : 陣列內容 : %4(可加可不加)",
+                    "message0": "創建set 資料型態 %1 , 名字 : %2 , 大小 : %3(可加可不加) : 陣列內容 : %4 (可加可不加)",
                     "args0" : [
                         {
                             "type": "field_dropdown",
                             "name": "TYPE",
                             "options": [
-                                ["int", "int"],
-                                ["float", "float"],
-                                ["double", "double"],
-                                ["char", "char"],
-                                ["string", "std::string"],
-                                ["long long", "long long"]
+                                ["整數", "int"],
+                                ["浮點數", "float"],
+                                ["雙重浮點數", "double"],
+                                ["字元", "char"],
+                                ["字串", "std::string"],
+                                ["更長的整數", "long long"]
                             ]
                         },
                         {
@@ -2176,7 +2565,7 @@
                 },
                 { //set insert
                     "type" : "set_insert",
-                    "message0" : "set%1插入%2",
+                    "message0" : "set %1 插入 %2",
                     "args0" : [
                         {
                             "type" : "field_input",
@@ -2195,7 +2584,7 @@
                 },
                 { //set erase
                     "type" : "set_erase",
-                    "message0" : "set%1刪除%2",
+                    "message0" : "set %1 刪除 %2",
                     "args0" : [
                         {
                             "type" : "field_input",
@@ -2214,7 +2603,7 @@
                 },
                 { //set begin
                     "type" : "set_begin",
-                    "message0" : "set%1的第一個(begin)",
+                    "message0" : "set %1 的第一個(begin)",
                     "args0" : [
                         {
                             "type" : "field_input",
@@ -2229,7 +2618,7 @@
                 },
                 { //set end
                     "type" : "set_end",
-                    "message0" : "set%1的最後一個(end)",
+                    "message0" : "set %1 的最後一個(end)",
                     "args0" : [
                         {
                             "type" : "field_input",
@@ -2244,7 +2633,7 @@
                 },
                 { //set empty
                     "type" : "set_empty",
-                    "message0" : "判斷set%1是否為空",
+                    "message0" : "判斷set %1 是否為空",
                     "args0" : [
                         {
                             "type" : "field_input",
@@ -2257,7 +2646,7 @@
                 },
                 { //set find
                     "type" : "set_find",
-                    "message0" : "set: %1 中尋找有沒有%2(key)值",
+                    "message0" : "set: %1 中尋找有沒有 %2 (key)值",
                     "args0" : [
                         {
                             "type" : "field_input",
@@ -2277,7 +2666,7 @@
                 //algorithm
                 { //algorithm sort
                     "type" : "sort",
-                    "message0" : "%1 陣列%2排序, 範圍(頭: %3, 尾: %4)",
+                    "message0" : "%1 陣列 %2 排序, 範圍(頭: %3, 尾: %4)",
                     "args0" : [ 
                         {
                             "type" : "field_dropdown",
@@ -2307,7 +2696,7 @@
                 },
                 { //algorithm max
                     "type" : "max",
-                    "message0" : "%1 陣列%2最大值, 範圍(頭: %3, 尾: %4)",
+                    "message0" : "%1 陣列 %2 最大值, 範圍(頭: %3, 尾: %4)",
                     "args0" : [ 
                         {
                             "type" : "field_dropdown",
@@ -2337,7 +2726,7 @@
                 },
                 { //algorithm min
                     "type" : "min",
-                    "message0" : "%1 陣列%2最小值, 範圍(頭: %3, 尾: %4)",
+                    "message0" : "%1 陣列 %2 最小值, 範圍(頭: %3, 尾: %4)",
                     "args0" : [ 
                         {
                             "type" : "field_dropdown",
@@ -2367,7 +2756,7 @@
                 },
                 { //algorithm find
                     "type" : "find",
-                    "message0" : "%1 陣列%2尋找%3 範圍(頭: %4, 尾: %5)",
+                    "message0" : "%1 陣列 %2 尋找 %3 範圍(頭: %4, 尾: %5)",
                     "args0" : [ 
                         {
                             "type" : "field_dropdown",
@@ -2398,10 +2787,11 @@
                     "previousStatement" : null,
                     "nextStatement" : null,
                     "tooltip" : "sort array"
-                }
+                },
+                
             ]
         );
-        
+
         Blockly.Blocks['math_generic'] = {
             init: function() {
                 this.setColour("#71b700");
@@ -2522,9 +2912,7 @@
         Blockly.Cpp['commas'] = function(block) {
             return generateCode(block, ' , ');
         };
-        Blockly.Cpp['scanf_block'] = function(block){
-            return generateCode(block, ' ');
-        }
+
         function generateCode(block, operator) {
             let code = '';
             for (let i = 0; i < block.itemCount_; i++) {
@@ -2604,28 +2992,6 @@
         };
 
         //condition
-        Blockly.Cpp['switch_block'] = function(block) {
-            var switchValue = Blockly.Cpp.valueToCode(block, 'SWITCH_VALUE', 1) || '()';
-            var caseStatements = Blockly.Cpp.statementToCode(block, 'DO');
-            return `switch ${switchValue} {\n${caseStatements}}\n`;
-        };
-
-        Blockly.Cpp['case_block'] = function(block) {
-            var caseValue = Blockly.Cpp.valueToCode(block, 'CASE_VALUE', 1) || '0';
-            var statements_do = Blockly.Cpp.statementToCode(block, 'DO');
-
-            if (caseValue.startsWith('(') && caseValue.endsWith(')')) {
-                caseValue = caseValue.slice(1, -1);
-            }
-
-            return `case ${caseValue}:\n${statements_do}\nbreak;\n`;
-        };
-
-        Blockly.Cpp['default_block'] = function(block) {
-            var statements_do = Blockly.Cpp.statementToCode(block, 'DO');
-            return `default:\n${statements_do}\nbreak;\n`;
-        };
-
         Blockly.Cpp['while_block'] = function(block) {
             var condition = Blockly.Cpp.valueToCode(block, 'CONDITION', 1) || `((false))`;
             var statements_do = Blockly.Cpp.statementToCode(block, 'DO');
@@ -2864,8 +3230,99 @@
             return ['false', 1];
         };
 
-        Blockly.Cpp['null'] = function() {
+        //pointer 
+        Blockly.Cpp['nullptr'] = function() {
             return ['nullptr', 1];
+        };
+        
+        Blockly.Cpp['declare_pointer'] = function(block) {
+            var Const_ptr = block.getFieldValue('const_ptr');
+            var Const_var = block.getFieldValue('const_var');
+            var unsigned = block.getFieldValue('unsigned');
+            var type = block.getFieldValue('TYPE');
+            var var_name = block.getFieldValue('var_name');
+            var value = Blockly.Cpp.valueToCode(block, 'value', 1) || '';
+            code = '';
+            if (Const_ptr === 'const_ptr'){
+                code += 'const ';
+            }
+            if (unsigned === 'unsigned'){
+                code += 'unsigned ';
+            }
+            
+            code += `${type}* `;
+            if (Const_var === 'const_var'){
+                code += 'const '; 
+            }
+            
+            code += var_name + ' ';
+
+            if (value.startsWith('(') && value.endsWith(')')){
+                value = value.slice(1, -1);
+            }
+            if (value !== ''){
+                code += `= ${value}`;
+            }
+            code += ';\n';
+            return code;
+        };
+        
+        Blockly.Cpp['declare_reference'] = function(block) {
+            var Const_ptr = block.getFieldValue('const');
+            var unsigned = block.getFieldValue('unsigned');
+            var type = block.getFieldValue('TYPE');
+            var var_name = block.getFieldValue('var_name');
+            var value = Blockly.Cpp.valueToCode(block, 'value', 1) || '';
+            code = '';
+            if (Const_ptr === 'const'){
+                code += 'const ';
+            }
+            if (unsigned === 'unsigned'){
+                code += 'unsigned ';
+            }
+            
+            if (type === 'no'){
+                code += `&${var_name} `;
+            }
+            else {
+                code += `${type} &${var_name} `;
+            }
+            if (value.startsWith('(') && value.endsWith(')')){
+                value = value.slice(1, -1);
+            }
+            if (value !== ''){
+                code += `= ${value}`;
+            }
+            code += ';\n';
+            return code;
+        };
+        
+        Blockly.Cpp['ptr_equal'] = function(block) {
+            var ptr = block.getFieldValue('ptr_name');
+            var value = Blockly.Cpp.valueToCode(block, 'VALUE', 1) || '0';
+            if (value.startsWith('(') && value.endsWith(')')) {
+                value = value.slice(1, -1);
+            }
+            return `${ptr} = ${value};\n`;
+        };
+
+        Blockly.Cpp['get_ptr'] = function(block) {
+            var ptr = block.getFieldValue('ptr_name');
+            return [`${ptr}`, 1];
+        };
+
+        Blockly.Cpp['ref_equal'] = function(block) {
+            var ref = block.getFieldValue('ref_name');
+            var value = Blockly.Cpp.valueToCode(block, 'VALUE', 1) || '0';
+            if (value.startsWith('(') && value.endsWith(')')) {
+                value = value.slice(1, -1);
+            }
+            return `${ref} = ${value};\n`;
+        };
+
+        Blockly.Cpp['get_ref'] = function(block) {
+            var ref = block.getFieldValue('ref_name');
+            return [`${ref}`, 1];
         };
 
         //define variable
@@ -2887,11 +3344,14 @@
             if (value.startsWith('(') && value.endsWith(')')){
                 value = value.slice(1, -1);
             }
-            code += ` = ${value};\n`;
+            if (value !== ''){
+                code += ` = ${value}`;
+            }
+            code += ';\n';
             return code;
         };
 
-        Blockly.Cpp['variable_assignment'] = function(block) {
+        Blockly.Cpp['var_equal'] = function(block) {
             var variable = block.getFieldValue('VAR_NAME');
             var value = Blockly.Cpp.valueToCode(block, 'VALUE', 1) || '0';
             if (value.startsWith('(') && value.endsWith(')')) {
@@ -2900,7 +3360,7 @@
             return `${variable} = ${value};\n`;
         };
 
-        Blockly.Cpp['get_variable'] = function(block) {
+        Blockly.Cpp['get_var'] = function(block) {
             var variable = block.getFieldValue('VAR_NAME');
             return [`${variable}`, 1];
         };
@@ -2937,7 +3397,7 @@
                 expression = expression.slice(1, -1);
             }
 
-            return `${Type} ${funcName}(${data}){\n${content}  return${expression}\n}\n`;
+            return `${Type} ${funcName}(${data}){\n${content}  return ${expression};\n}\n`;
         };
         
         Blockly.Cpp['function_definition_void'] = function(block) {
@@ -2960,13 +3420,13 @@
             }
         };
 
-
         //unwork 
         Blockly.Cpp['boost_printf'] = function(block) {
             var format = Blockly.Cpp.valueToCode(block, 'FORMAT', 1);
             return 'printf("%s", ' + format + ');\n';
         };
 
+    //Standard Library
         //math
         Blockly.Cpp['math_random'] = function(block) {
             var Value = Blockly.Cpp.valueToCode(block, 'RANGE', 1);
@@ -3633,9 +4093,7 @@
         Blockly.Cpp['get_current_utc_time'] = function(block) {
             return 'time_t currentTime = time(nullptr);\ntm* utcTime = gmtime(&currentTime);\n';
         };
-
+ 
     </script>
-
-
 </body>
 </html>
