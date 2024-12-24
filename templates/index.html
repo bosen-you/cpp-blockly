@@ -215,7 +215,7 @@
         <div class="actions">
             <button class="compile" id="c">編譯</button>
             <button class="run" id="r">執行</button>
-            <button class="run_compile" id="r_c">編譯&執行</button>
+            <button class="run_compile" id="c_r">編譯&執行</button>
             <button class="toggle-view" id="toggle-button" onclick="toggleView()">切換模式</button>
             <a href='https://hackmd.io/@cpp-blockly' target="_blank"><button class="help">尋求幫助?</button></a>
         </div>
@@ -571,7 +571,7 @@
 
 
         function updateVariableCategory() {
-            let variableCategory = toolboxXml.querySelector('category[name="自定義變數"]');
+            let variableCategory = toolboxXml.querySelector('category[name="變數與資料類型"]');
             if (!variableCategory) {
                 console.error("未找到 '自定義變數' 類別");
                 return null;
@@ -688,9 +688,10 @@
             return code;
         };
 
+        var id_code = '';
         async function updateCodeOutput() {
-            var code = Blockly.Cpp.workspaceToCode(workspace); // 獲取 Blockly 生成的 C++ 代碼
-            var lines = code.split('\n'); // 按行分割代碼
+            id_code = Blockly.Cpp.workspaceToCode(workspace); // 獲取 Blockly 生成的 C++ 代碼
+            var lines = id_code.split('\n'); // 按行分割代碼
             var outputElement = document.getElementById('code-output');
 
             outputElement.innerHTML = ''; // 清空現有內容
@@ -706,7 +707,7 @@
             codeContent.style.fontSize = '16px'; // 設置字體大小
 
             // 將每行代碼添加到 codeContent
-            codeContent.textContent = code; // 保持代碼的原始格式
+            codeContent.textContent = id_code; // 保持代碼的原始格式
             codeBlock.appendChild(codeContent);
             outputElement.appendChild(codeBlock); // 添加代碼塊到輸出區域
 
@@ -733,56 +734,15 @@
 
             // 配置 marked.js，啟用 highlight.js 支援
             marked.setOptions({
-                highlight: function(code, lang) {
+                highlight: function(id_code, lang) {
                     const validLang = hljs.getLanguage(lang) ? lang : 'plaintext';
-                    return hljs.highlight(code, {
+                    return hljs.highlight(id_code, {
                         language: validLang
                     }).value;
                 }
             });
-            
-            let idid = '';
-            function checkbuttonID(buttonId){
-                if (buttonId === 'c'){
-                    alert('compile code');
-                } else if (buttonId === 'r'){
-                    alert('run code');
-                } else if (buttonId === 'r_c'){
-                    alert('compile and run code');
-                }
-                idid = buttonId;
-            }
 
-            
-            document.getElementById('c').addEventListener('click', function() {
-                checkbuttonID(this.id);
-            })
-            document.getElementById('r').addEventListener('click', function() {
-                checkbuttonID(this.id);
-            })
-
-            document.getElementById('r_c').addEventListener('click', function() {
-                checkbuttonID(this.id);
-            })
-            
-            const response = await fetch('http://127.0.0.1:8000/compile', {
-                    method : "POST",
-                    headers : {
-                        "Content-Type" : "application/json"
-                    },
-                    body: JSON.stringify({id_code : code , action : idid})
-            })
-            
-            const result = await response.json();
-            
-            if (result.status === "error"){
-                sent_data = result.message;
-            } else if (result.status === "compilation_error"){
-                sent_data = result.message + '\n' + result.detail;
-            } else{
-                sent_data = result.message;
-            }
-
+           
             // 初次渲染 Markdown 區域
             renderMarkdown();
         }
@@ -827,12 +787,57 @@
             alert('編譯執行結果歷史紀錄已刪除')
         });
 
+        document.getElementById('c').addEventListener('click', async () => {
+            alert(`compile\n${id_code}`);
+            const response = await fetch('http://127.0.0.1:8000/compile', {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({id_code: id_code})
+            });
+
+            const result = await response.json();
+
+            report.value = result.message;
+            
+        });
+
+        document.getElementById('r').addEventListener('click', async () => {
+            alert(`run\n${textarea.value}`);
+            const response = await fetch('http://127.0.0.1:8000/run', {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({test_file : textarea.value})
+            });
+            const result = await response.json();
+            
+            report.value = result.message;
+        });
+
+        document.getElementById('c_r').addEventListener('click', async () => {
+            alert('rrrr');
+            const response = await fetch('http://127.0.0.1:8000/compile_and_run', {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({id_code: id_code, test_file : textarea.value})
+            });
+            const result = await response.json();
+            
+            report.value = result.message;
+        });
+        
         delete Blockly.Blocks['controls_if'];
         delete Blockly.Blocks['text'];
 
         // 定義 switch_block
         Blockly.Blocks['switch_block'] = {
             init: function () {
+                this.setPreviousStatement(true);
                 this.appendValueInput("SWITCH_VALUE")
                     .setCheck(null)
                     .appendField("切換");
@@ -4093,6 +4098,7 @@
         Blockly.Cpp['get_current_utc_time'] = function(block) {
             return 'time_t currentTime = time(nullptr);\ntm* utcTime = gmtime(&currentTime);\n';
         };
+ 
     </script>
 </body>
 </html>
