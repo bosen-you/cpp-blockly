@@ -789,7 +789,7 @@
 
         document.getElementById('c').addEventListener('click', async () => {
             alert(`compile\n${id_code}`);
-            const response = await fetch('http://127.0.0.1:8000/compile', {
+            const response = await fetch('https://cpp-blockly-production.up.railway.app/compile', {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -805,7 +805,7 @@
 
         document.getElementById('r').addEventListener('click', async () => {
             alert(`run\n${textarea.value}`);
-            const response = await fetch('http://127.0.0.1:8000/run', {
+            const response = await fetch('https://cpp-blockly-production.up.railway.app/run', {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -819,7 +819,7 @@
 
         document.getElementById('c_r').addEventListener('click', async () => {
             alert('rrrr');
-            const response = await fetch('http://127.0.0.1:8000/compile_and_run', {
+            const response = await fetch('https://cpp-blockly-production.up.railway.app/compile_and_run', {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
