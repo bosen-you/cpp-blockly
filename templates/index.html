@@ -994,12 +994,12 @@
         // 定義生成 C++ 代碼邏輯
         Blockly.Cpp['if_block'] = function (block) {
             const ifValue = Blockly.Cpp.valueToCode(block, 'IF_VALUE', Blockly.Cpp.ORDER_ATOMIC) || 'false'; // 預設值為 false
-            let code = `if (${ifValue}) {\n`;
+            let code = `if ${ifValue} {\n`;
             code += Blockly.Cpp.statementToCode(block, 'IF_DO');
 
             for (let i = 0; i < block.elifCount_; i++) {
                 const elifValue = Blockly.Cpp.valueToCode(block, 'ELIF' + i, Blockly.Cpp.ORDER_ATOMIC) || 'false'; // 預設值為 false
-                code += `} \nelse if (${elifValue}) {\n`;
+                code += `} \nelse if ${elifValue} {\n`;
                 code += Blockly.Cpp.statementToCode(block, 'ELIF_DO' + i);
             }
 
@@ -2006,7 +2006,7 @@
                 //vector
                 { //define vector
                     "type": "define_vector",
-                    "message0": "資料型態%1 , 名字 : %2 , 大小 : %3(可加可不加) : 陣列內容 : %4(可加可不加)",
+                    "message0": "創建vector資料型態%1 , 名字 : %2 , 大小 : %3(可加可不加) : 陣列內容 : %4(可加可不加)",
                     "args0": [{
                             "type": "field_dropdown",
                             "name": "TYPE",
@@ -2177,6 +2177,7 @@
                     ],
                     "inputsInline": true,
                     "output": null,
+                    "previousStatement" : null,
                     "nextStatement": null,
                     "colour": "#6A5ACD",
                     "tooltip": "push back number to vector",
@@ -2486,7 +2487,7 @@
                 //array
                 { //create array
                     "type": "create_array",
-                    "message0": "資料型態 %1 , 陣列名稱 %2 , 大小 : %3 , 陣列內容 %4 (可加可不加)",
+                    "message0": "創建傳統陣列 資料型態 %1 , 陣列名稱 %2 , 大小 : %3 , 陣列內容 %4 (可加可不加)",
                     "args0": [{
                             "type": "field_dropdown",
                             "name": "TYPE",
@@ -3845,7 +3846,7 @@
 
         Blockly.Cpp['vec_end'] = function(block) {
             var vec_name = block.getFieldValue('vec_name') || '';
-            var code = vec_name + 'end()';
+            var code = vec_name + '.end()';
             return [code, 1];
         }
 
@@ -3896,7 +3897,7 @@
                     value = value.slice(1, -1);
             }
             
-            return `${vec_name}.insert(${vec_name}.begin()+${pos}, ${value});\n`; 
+            return `${vec_name}.erase(${vec_name}.begin()+${pos}, ${value});\n`; 
         }
 
         Blockly.Cpp['vector_clear'] = function(block) {
@@ -3906,7 +3907,8 @@
 
         Blockly.Cpp['vector_size'] = function(block) {
             var vec_name = block.getFieldValue('vec_name');
-            return vec_name + ".size();\n";
+            var code = vec_name + ".size();";
+            return [code, 1];
         }
 
         Blockly.Cpp['vector_empty'] = function(block) {
@@ -4038,7 +4040,8 @@
 
         Blockly.Cpp['map_size'] = function(block) {
             var map_name = block.getFieldValue('map_name');
-            return map_name + ".size();\n";
+            var code = map_name + ".size()";
+            return [code, 1];
         }
 
         Blockly.Cpp['map_empty'] = function(block) {
@@ -4122,7 +4125,7 @@
             if (value.startsWith('(') && value.endsWith(')')){
                 value = value.slice(1, -1);
             }
-            return `${set_name}.insert(${value})\n`;
+            return `${set_name}.erase(${value})\n`;
         }
 
         Blockly.Cpp['set_begin'] = function(block) {
@@ -4133,7 +4136,7 @@
 
         Blockly.Cpp['set_end'] = function(block) {
             var set_name = block.getFieldValue('set_name') || '';
-            var code = set_name + 'end()';
+            var code = set_name + '.end()';
             return [code, 1];
         }
 
