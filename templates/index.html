@@ -483,7 +483,7 @@
                 "name": "文本操作",
                 "colour": "#FF8C00",
                 "contents": [
-                  {"kind": "block", "type": "text"},
+                  {"kind": "block", "type": "label"},
                   {"kind": "block", "type": "add_line"},
                   {"kind": "block", "type": "tab"},
                   {"kind": "block", "type": "comment_block"}
@@ -494,11 +494,15 @@
                 "name": "基礎運算模組",
                 "colour": "#64A800",
                 "contents": [
+                  {"kind": "label", "text": "輸入/輸出/字串組合模組"},
+                  {"kind": "block", "type": "in"},
+                  {"kind": "block", "type": "out"},
                   {"kind": "block", "type": "commas"},
-                  {"kind": "block", "type": "math_multiply"},
-                  {"kind": "block", "type": "math_devide"},
+                  {"kind": "label", "text": "數學運算組合模組"},
                   {"kind": "block", "type": "math_plus"},
                   {"kind": "block", "type": "math_subtract"},
+                  {"kind": "block", "type": "math_multiply"},
+                  {"kind": "block", "type": "math_devide"},
                   {"kind": "block", "type": "math_percent"}
                 ]
               },
@@ -534,7 +538,7 @@
                 "name": "條件與迴圈",
                 "colour": "#00ABEA",
                 "contents": [
-                  {"kind": "block", "type": "controls_if"},
+                  {"kind": "block", "type": "if_block"},
                   {"kind": "block", "type": "for_block"},
                   {"kind": "block", "type": "while_block"},
                   {"kind": "block", "type": "switch_block"},
@@ -788,7 +792,7 @@
         });
 
         document.getElementById('c').addEventListener('click', async () => {
-            alert(`compile\n${id_code}`);
+            alert(`編譯以下代碼:\n${id_code}`);
             const response = await fetch('https://cpp-blockly-production.up.railway.app/compile', {
                 method: "POST",
                 headers: {
@@ -804,7 +808,7 @@
         });
 
         document.getElementById('r').addEventListener('click', async () => {
-            alert(`run\n${textarea.value}`);
+            alert(`執行測資\n${textarea.value}`);
             const response = await fetch('https://cpp-blockly-production.up.railway.app/run', {
                 method: "POST",
                 headers: {
@@ -818,7 +822,7 @@
         });
 
         document.getElementById('c_r').addEventListener('click', async () => {
-            alert('rrrr');
+            alert('編譯並執行');
             const response = await fetch('https://cpp-blockly-production.up.railway.app/compile_and_run', {
                 method: "POST",
                 headers: {
@@ -830,9 +834,183 @@
             
             report.value = result.message;
         });
-        
-        delete Blockly.Blocks['controls_if'];
-        delete Blockly.Blocks['text'];
+
+        // 定義 if_block
+        Blockly.Blocks['if_block'] = {
+            init: function () {
+                this.setPreviousStatement(true);
+                this.appendValueInput("IF_VALUE")
+                    .setCheck("Boolean") // 確保條件為布林值
+                    .appendField("如果");
+                this.appendStatementInput('IF_DO')
+                    .setCheck(null)
+                    .appendField("執行");
+                this.setNextStatement(true);
+                this.setMutator(new Blockly.Mutator(['elif_mutator', 'else_mutator']));
+                this.setColour("#00abea");
+                this.setTooltip("If 語句");
+                this.setHelpUrl("");
+                this.elifCount_ = 0; // 初始化 case 計數器
+                this.hasElse_ = false; // 是否有 else 分支
+            },
+
+            mutationToDom: function () {
+                const container = Blockly.utils.xml.createElement('mutation');
+                container.setAttribute('elifCount', this.elifCount_);
+                container.setAttribute('hasElse', this.hasElse_);
+                return container;
+            },
+
+            domToMutation: function (xmlElement) {
+                this.elifCount_ = parseInt(xmlElement.getAttribute('elifCount'), 10);
+                this.hasElse_ = xmlElement.getAttribute('hasElse') === 'true';
+                this.updateShape_();
+            },
+
+            decompose: function (workspace) {
+                const containerBlock = workspace.newBlock('if_mutator');
+                containerBlock.initSvg();
+                containerBlock.setFieldValue(this.elifCount_, 'ELIF_COUNT');
+                let connection = containerBlock.nextConnection;
+
+                for (let i = 0; i < this.elifCount_; i++) {
+                    const caseBlock = workspace.newBlock('elif_mutator');
+                    caseBlock.initSvg();
+                    connection.connect(caseBlock.previousConnection);
+                    connection = caseBlock.nextConnection;
+                }
+
+                if (this.hasElse_) {
+                    const elseBlock = workspace.newBlock('else_mutator');
+                    elseBlock.initSvg();
+                    connection.connect(elseBlock.previousConnection);
+                }
+
+                return containerBlock;
+            },
+
+            compose: function (containerBlock) {
+                let caseBlock = containerBlock.nextConnection.targetBlock();
+                const connections = [];
+                let hasElse = false;
+
+                while (caseBlock) {
+                    if (caseBlock.type === 'elif_mutator') {
+                        connections.push(caseBlock.valueConnection_);
+                    } else if (caseBlock.type === 'else_mutator') {
+                        hasElse = true;
+                    }
+                    caseBlock = caseBlock.nextConnection &&
+                                caseBlock.nextConnection.targetBlock();
+                }
+
+                this.elifCount_ = connections.length;
+                this.hasElse_ = hasElse;
+                this.updateShape_();
+
+                for (let i = 0; i < this.elifCount_; i++) {
+                    Blockly.Mutator.reconnect(connections[i], this, 'ELIF' + i);
+                }
+            },
+
+            updateShape_: function () {
+                // 移除舊的 ELIF 和 ELSE 輸入
+                for (let i = 0; i < this.elifCount_; i++) {
+                    if (this.getInput('ELIF' + i)) {
+                        this.removeInput('ELIF' + i);
+                    }
+                    if (this.getInput('ELIF_DO' + i)) {
+                        this.removeInput('ELIF_DO' + i);
+                    }
+                }
+
+                if (this.getInput('ELSE')) {
+                    this.removeInput('ELSE');
+                }
+
+                // 添加新的 ELIF 輸入
+                for (let i = 0; i < this.elifCount_; i++) {
+                    this.appendValueInput('ELIF' + i)
+                        .setCheck("Boolean") // 確保條件為布林值
+                        .appendField("否則如果");
+                    this.appendStatementInput('ELIF_DO' + i)
+                        .setCheck(null)
+                        .appendField("執行");
+                }
+
+                // 添加 ELSE 輸入
+                if (this.hasElse_) {
+                    this.appendStatementInput('ELSE')
+                        .setCheck(null)
+                        .appendField("否則執行");
+                }
+            }
+        };
+
+        // 定義輔助塊
+        Blockly.Blocks['if_mutator'] = {
+            init: function () {
+                this.appendDummyInput()
+                    .appendField("否則如果的狀況數量")
+                    .appendField(new Blockly.FieldNumber(0, 0, Infinity, 1), 'ELIF_COUNT');
+                this.setNextStatement(true);
+                this.setColour("#00abea");
+                this.setTooltip("");
+                this.setHelpUrl("");
+            }
+        };
+
+        Blockly.Blocks['elif_mutator'] = {
+            init: function () {
+                this.appendDummyInput()
+                    .appendField("否則如果");
+                this.setPreviousStatement(true);
+                this.setNextStatement(true);
+                this.setColour("#00abea");
+                this.setTooltip("");
+                this.setHelpUrl("");
+                this.valueConnection_ = null;
+            },
+
+            saveConnections: function () {
+                const input = this.getInput('ELIF');
+                if (input && input.connection.isConnected()) {
+                    this.valueConnection_ = input.connection.targetConnection;
+                }
+            }
+        };
+
+        Blockly.Blocks['else_mutator'] = {
+            init: function () {
+                this.appendDummyInput()
+                    .appendField("否則");
+                this.setPreviousStatement(true);
+                this.setColour("#00abea");
+                this.setTooltip("");
+                this.setHelpUrl("");
+            }
+        };
+
+        // 定義生成 C++ 代碼邏輯
+        Blockly.Cpp['if_block'] = function (block) {
+            const ifValue = Blockly.Cpp.valueToCode(block, 'IF_VALUE', Blockly.Cpp.ORDER_ATOMIC) || 'false'; // 預設值為 false
+            let code = `if (${ifValue}) {\n`;
+            code += Blockly.Cpp.statementToCode(block, 'IF_DO');
+
+            for (let i = 0; i < block.elifCount_; i++) {
+                const elifValue = Blockly.Cpp.valueToCode(block, 'ELIF' + i, Blockly.Cpp.ORDER_ATOMIC) || 'false'; // 預設值為 false
+                code += `} \nelse if (${elifValue}) {\n`;
+                code += Blockly.Cpp.statementToCode(block, 'ELIF_DO' + i);
+            }
+
+            if (block.hasElse_) {
+                code += '} \nelse {\n';
+                code += Blockly.Cpp.statementToCode(block, 'ELSE');
+            }
+
+            code += '}\n';
+            return code;
+        };
 
         // 定義 switch_block
         Blockly.Blocks['switch_block'] = {
@@ -844,6 +1022,7 @@
                 this.appendStatementInput("DEFAULT")
                     .setCheck(null)
                     .appendField("預設執行");
+                this.setNextStatement(true);
                 this.setMutator(new Blockly.Mutator(['case_mutator']));
                 this.setColour("#00abea");
                 this.setTooltip("Switch 語句");
@@ -1023,7 +1202,7 @@
 
                 //data
                 { //text
-                    "type": "text",
+                    "type": "label",
                     "message0": "文本 %1",
                     "args0": [{
                         "type": "field_input",
@@ -1080,26 +1259,6 @@
                 },
 
                 //condition
-                { //if
-                    "type": "controls_if",
-                    "message0": "如果 %1",
-                    "args0": [{
-                        "type": "input_value",
-                        "name": "IF0",
-                        "check": "Boolean"
-                    }],
-                    "message1": "執行 %1",
-                    "args1": [{
-                        "type": "input_statement",
-                        "name": "DO0"
-                    }],
-                    "previousStatement": null,
-                    "nextStatement": null,
-                    "colour": "#00abea",
-                    "tooltip": "如果條件為真，執行",
-                    "helpUrl": "",
-                    "mutator": "controls_if_mutator"
-                },
                 { //for
                     "type": "for_block",
                     "message0": "初始值 %1 = %2 循環條件 %3 迴圈條件 %4 = %5 執行%6 ",
@@ -1146,7 +1305,7 @@
                         "name": "CONDITION",
                         "check": "Boolean"
                     }],
-                    "message1": "執行 %1",
+                    "message1": "重複執行 %1",
                     "args1": [{
                         "type": "input_statement",
                         "name": "DO"
@@ -1315,7 +1474,8 @@
                         },
                         {
                             "type" : "field_input",
-                            "name" : "var_name"
+                            "name" : "var_name",
+                            "text" : "i"
                         },
                         {
                             "type" : "input_value",
@@ -1531,7 +1691,7 @@
                 { //false
                     "type": "false",
                     "message0": "False",
-                    "output": "boolean",
+                    "output": "Boolean",
                     "colour": "#29A1CD",
                     "tooltip": "",
                     "helpUrl": ""
@@ -2797,6 +2957,105 @@
             ]
         );
 
+        Blockly.Blocks['str_generic'] = {
+            init: function() {
+                this.setColour("#71b700");
+                this.setOutput(true, "String");
+                this.setInputsInline(true);
+                this.setMutator(new Blockly.Mutator(['str_generic_item']));
+                this.itemCount_ = 2;
+                this.operator_ = ','; // 默認運算符
+                this.updateShape_();
+            },
+            mutationToDom: function() {
+                const container = document.createElement('mutation');
+                container.setAttribute('items', this.itemCount_);
+                container.setAttribute('operator', this.operator_);
+                return container;
+            },
+            domToMutation: function(xmlElement) {
+                this.itemCount_ = parseInt(xmlElement.getAttribute('items'), 10);
+                this.operator_ = xmlElement.getAttribute('operator') || '+';
+                this.updateShape_();
+            },
+            decompose: function(workspace) {
+                const containerBlock = workspace.newBlock('str_generic_container');
+                containerBlock.initSvg();
+                let connection = containerBlock.getInput('STACK').connection;
+                for (let i = 0; i < this.itemCount_; i++) {
+                    const itemBlock = workspace.newBlock('str_generic_item');
+                    itemBlock.initSvg();
+                    connection.connect(itemBlock.previousConnection);
+                    connection = itemBlock.nextConnection;
+                }
+                return containerBlock;
+            },
+            compose: function(containerBlock) {
+                let itemBlock = containerBlock.getInputTargetBlock('STACK');
+                const connections = [];
+                while (itemBlock) {
+                    connections.push(itemBlock.valueConnection_);
+                    itemBlock = itemBlock.nextConnection && itemBlock.nextConnection.targetBlock();
+                }
+                this.itemCount_ = connections.length;
+                this.updateShape_();
+                for (let i = 0; i < this.itemCount_; i++) {
+                    Blockly.Mutator.reconnect(connections[i], this, 'ADD' + i);
+                }
+            },
+            updateShape_: function() {
+                for (let i = this.itemCount_ - 1; i >= 0; i--) {
+                    if (this.getInput('ADD' + i)) {
+                        this.removeInput('ADD' + i);
+                    }
+                }
+                for (let i = 0; i < this.itemCount_; i++) {
+                    const input = this.appendValueInput('ADD' + i).setCheck("String");
+                    if (i > 0) {
+                        input.appendField(this.operator_);
+                    }
+                }
+            },
+            setOperator: function(operator) {
+                this.operator_ = operator;
+                this.updateShape_();
+            }
+        };
+
+        Blockly.Blocks['str_generic_container'] = {
+            init: function() {
+                this.setColour("#71b700");
+                this.appendDummyInput().appendField("輸入");
+                this.appendStatementInput('STACK');
+                this.contextMenu = false;
+            }
+        };
+
+        Blockly.Blocks['str_generic_item'] = {
+            init: function() {
+                this.setColour("#71b700");
+                this.appendDummyInput().appendField("項目");
+                this.setPreviousStatement(true);
+                this.setNextStatement(true);
+                this.contextMenu = false;
+            }
+        };
+
+        createOperatorBlock('in', '>>');
+        createOperatorBlock('out', '<<');
+        createOperatorBlock('commas', ',');
+        //A function of Cpp block convert to Cpp.
+        //infinity
+        Blockly.Cpp['in'] = function(block) {
+            return generateCode(block, ' >> ');
+        };
+        Blockly.Cpp['out'] = function(block) {
+            return generateCode(block, ' << ');
+        };
+        Blockly.Cpp['commas'] = function(block) {
+            return generateCode(block, ' , ');
+        };
+
         Blockly.Blocks['math_generic'] = {
             init: function() {
                 this.setColour("#71b700");
@@ -2888,6 +3147,12 @@
                     this.setOperator(operatorSymbol);
                 }
             });
+            Blockly.Blocks[type] = Object.assign({}, Blockly.Blocks['str_generic'], {
+                init: function() {
+                    Blockly.Blocks['str_generic'].init.call(this);
+                    this.setOperator(operatorSymbol);
+                }
+            });
         }
 
         createOperatorBlock('math_plus', '+');
@@ -2895,8 +3160,6 @@
         createOperatorBlock('math_percent', '%');
         createOperatorBlock('math_devide', '/');
         createOperatorBlock('math_subtract', '-');
-        createOperatorBlock('commas', ',');
-        createOperatorBlock('scanf_block', ' ');
         //A function of Cpp block convert to Cpp.
         //infinity
         Blockly.Cpp['math_plus'] = function(block) {
@@ -2914,14 +3177,11 @@
         Blockly.Cpp['math_subtract'] = function(block) {
             return generateCode(block, ' - ');
         };
-        Blockly.Cpp['commas'] = function(block) {
-            return generateCode(block, ' , ');
-        };
 
         function generateCode(block, operator) {
             let code = '';
             for (let i = 0; i < block.itemCount_; i++) {
-                let argument = Blockly.Cpp.valueToCode(block, 'ADD' + i, 1) || '0';
+                let argument = Blockly.Cpp.valueToCode(block, 'ADD' + i, 1) || '';
                 if (argument.startsWith('(') && argument.endsWith(')')) {
                     argument = argument.slice(1, -1);
                 }
@@ -2930,7 +3190,7 @@
                     code += operator;
                 }
             }
-            return [`(${code})`, 1];
+            return [`${code}`, 1];
         }
 
         //data
@@ -2942,7 +3202,7 @@
             return [`  `, 1];
         };
         
-        Blockly.Cpp['text'] = function(block) {
+        Blockly.Cpp['label'] = function(block) {
             var text = block.getFieldValue('TEXT') || '';
             return [`"${text}"`, 1];
         };
@@ -3006,41 +3266,6 @@
             }
 
             var code = 'while ' + condition + ' {\n' + statements_do + '\n}\n';
-            return code;
-        };
-
-        Blockly.Cpp['controls_if'] = function(block) {
-            var n = 0;
-            var code = '';
-
-            // 首先生成 if 條件
-            if (block.getInput('IF' + n)) {
-                var conditionCode = Blockly.Cpp.valueToCode(block, 'IF' + n, 1) || 'false';
-                var branchCode = Blockly.Cpp.statementToCode(block, 'DO' + n); // 使用 "DO" + n，與定義一致
-                if (conditionCode.startsWith('(') && conditionCode.endsWith(')')) {
-                    conditionCode = conditionCode.slice(1, -1);
-                }
-                code += 'if (' + conditionCode + ') {\n' + branchCode + '}\n';
-                n++;
-            }
-
-            // 生成 else if 條件
-            while (block.getInput('IF' + n)) {
-                var elseIfConditionCode = Blockly.Cpp.valueToCode(block, 'IF' + n, 1) || 'false';
-                var elseIfBranchCode = Blockly.Cpp.statementToCode(block, 'DO' + n);
-                if (conditionCode.startsWith('(') && conditionCode.endsWith(')')) {
-                    conditionCode = conditionCode.slice(1, -1);
-                }
-                code += 'else if (' + elseIfConditionCode + ') {\n' + elseIfBranchCode + '}\n';
-                n++;
-            }
-
-            // 最後生成 else 分支
-            if (block.getInput('ELSE')) {
-                var elseBranch = Blockly.Cpp.statementToCode(block, 'ELSE');
-                code += 'else {\n' + elseBranch + '}\n';
-            }
-
             return code;
         };
 
@@ -3431,7 +3656,7 @@
             return 'printf("%s", ' + format + ');\n';
         };
 
-    //Standard Library
+        //Standard Library
         //math
         Blockly.Cpp['math_random'] = function(block) {
             var Value = Blockly.Cpp.valueToCode(block, 'RANGE', 1);
@@ -3851,7 +4076,6 @@
             var code = `${map_name}.find(${value})`;
             return [code, 1];
         }
-
 
         //set
         Blockly.Cpp['create_set'] = function(block) {
