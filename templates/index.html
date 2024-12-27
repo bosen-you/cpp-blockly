@@ -3834,7 +3834,7 @@
             if (vec_size || content) {
                 code += ')';
             }
-            return code;
+            return `${code};\n`;
         }
 
         Blockly.Cpp['vec_begin'] = function(block) {
@@ -3877,7 +3877,7 @@
                     value = value.slice(1, -1);
             }
             
-            return `${vec_name}.insert(${vec_name}.begin()+${pos}, ${value})`; 
+            return `${vec_name}.insert(${vec_name}.begin()+${pos}, ${value});\n`; 
         }
 
         Blockly.Cpp['vector_erase'] = function(block) {
@@ -3896,7 +3896,7 @@
                     value = value.slice(1, -1);
             }
             
-            return `${vec_name}.insert(${vec_name}.begin()+${pos}, ${value})`; 
+            return `${vec_name}.insert(${vec_name}.begin()+${pos}, ${value});\n`; 
         }
 
         Blockly.Cpp['vector_clear'] = function(block) {
@@ -3930,7 +3930,7 @@
             if (content.startsWith('(') && content.endsWith(')')) {
                 content = content.slice(1, -1);
             }
-            return `${type} ${array_name}[${size}] = ${content};`
+            return `${type} ${array_name}[${size}] = ${content};\n`
         }
 
         Blockly.Cpp['array_name_block'] = function(block) {
@@ -3984,7 +3984,7 @@
             if (map_size || content){
                 code += ')';
             }
-            return code;
+            return `${code};\n`;
         }
 
         Blockly.Cpp['map_insert'] = function(block) {
@@ -3997,14 +3997,14 @@
             if (second.startsWith('(') && second.endsWith(')')){
                 second = second.slice(1, -1);
             }
-            return `${map_name}.insert({${first}, ${second}})`;
+            return `${map_name}.insert({${first}, ${second}});\n`;
         }
 
         Blockly.Cpp['map[i]'] = function(block) {
             var map_name = block.getFieldValue('map_name');
             var map_key = block.getFieldValue('map_key');
             var map_value = block.getFieldValue('map_value');
-            return `${map_name}[${map_key}] = ${map_value}`;
+            return `${map_name}[${map_key}] = ${map_value};\n`;
         }        
 
         Blockly.Cpp['map_begin'] = function(block) {
@@ -4104,7 +4104,7 @@
             if (set_size || content){
                 code += ')';
             }
-            return code;
+            return `${code};\n`;
         }
 
         Blockly.Cpp['set_insert'] = function(block) {
@@ -4113,7 +4113,7 @@
             if (value.startsWith('(') && value.endsWith(')')){
                 value = value.slice(1, -1);
             }
-            return `${set_name}.insert(${value})`;
+            return `${set_name}.insert(${value})\n`;
         }
 
         Blockly.Cpp['set_erase'] = function(block) {
@@ -4122,7 +4122,7 @@
             if (value.startsWith('(') && value.endsWith(')')){
                 value = value.slice(1, -1);
             }
-            return `${set_name}.insert(${value})`;
+            return `${set_name}.insert(${value})\n`;
         }
 
         Blockly.Cpp['set_begin'] = function(block) {
