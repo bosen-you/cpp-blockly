@@ -3927,7 +3927,7 @@
                 size = size.slice(1, -1);
             }
             if (content === '') {
-                return `${type} ${array_name}[${size}];`
+                return `${type} ${array_name}[${size}];\n`
             }
             if (content.startsWith('(') && content.endsWith(')')) {
                 content = content.slice(1, -1);
