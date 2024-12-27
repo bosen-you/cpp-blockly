@@ -52,7 +52,7 @@ async def compile_code(code : Code):
     try:
         result = subprocess.run(command, check = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE, text = True)
         subprocess.run(['rm' , source_file])
-        return{"status" : "error" , "message" : "success"}
+        return{"status" : "error" , "message" : "compile success"}
 
     except subprocess.CalledProcessError as e:
         subprocess.run(['rm' , source_file])
