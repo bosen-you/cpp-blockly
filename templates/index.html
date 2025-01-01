@@ -2555,12 +2555,11 @@
             ]
         );
 
-        // 定義 if_block
         Blockly.Blocks['if_block'] = {
             init: function () {
                 this.setPreviousStatement(true);
                 this.appendValueInput("IF_VALUE")
-                    .setCheck("Boolean") // 確保條件為布林值
+                    .setCheck("Boolean")
                     .appendField("如果");
                 this.appendStatementInput('IF_DO')
                     .setCheck(null)
@@ -2570,171 +2569,174 @@
                 this.setColour("#00abea");
                 this.setTooltip("If 語句");
                 this.setHelpUrl("");
-                this.elifCount_ = 0; // 初始化 case 計數器
-                this.hasElse_ = false; // 是否有 else 分支
+                this.elifCount_ = 0;
+                this.hasElse_ = false;
             },
 
-            mutationToDom: function () {
+            saveConnections: function(containerBlock) {
+                let clauseBlock = containerBlock.nextConnection.targetBlock();
+                let i = 0;
+                while (clauseBlock) {
+                    if (clauseBlock.type === 'elif_mutator') {
+                        const inputIf = this.getInput('ELIF' + i);
+                        clauseBlock.valueConnection_ = inputIf && inputIf.connection.targetConnection;
+                        i++;
+                    }
+                    clauseBlock = clauseBlock.nextConnection && clauseBlock.nextConnection.targetBlock();
+                }
+            },
+
+            mutationToDom: function() {
+                if (!this.elifCount_ && !this.hasElse_) {
+                    return null;
+                }
                 const container = Blockly.utils.xml.createElement('mutation');
                 container.setAttribute('elifCount', this.elifCount_);
                 container.setAttribute('hasElse', this.hasElse_);
                 return container;
             },
 
-            domToMutation: function (xmlElement) {
-                this.elifCount_ = parseInt(xmlElement.getAttribute('elifCount'), 10);
+            domToMutation: function(xmlElement) {
+                this.elifCount_ = parseInt(xmlElement.getAttribute('elifCount'), 10) || 0;
                 this.hasElse_ = xmlElement.getAttribute('hasElse') === 'true';
                 this.updateShape_();
             },
 
-            decompose: function (workspace) {
+            decompose: function(workspace) {
                 const containerBlock = workspace.newBlock('if_mutator');
                 containerBlock.initSvg();
-                containerBlock.setFieldValue(this.elifCount_, 'ELIF_COUNT');
                 let connection = containerBlock.nextConnection;
-
+                
                 for (let i = 0; i < this.elifCount_; i++) {
-                    const caseBlock = workspace.newBlock('elif_mutator');
-                    caseBlock.initSvg();
-                    connection.connect(caseBlock.previousConnection);
-                    connection = caseBlock.nextConnection;
+                    const elifBlock = workspace.newBlock('elif_mutator');
+                    elifBlock.initSvg();
+                    connection.connect(elifBlock.previousConnection);
+                    connection = elifBlock.nextConnection;
                 }
-
+                
                 if (this.hasElse_) {
                     const elseBlock = workspace.newBlock('else_mutator');
                     elseBlock.initSvg();
                     connection.connect(elseBlock.previousConnection);
                 }
-
+                
                 return containerBlock;
             },
 
-            compose: function (containerBlock) {
-                let caseBlock = containerBlock.nextConnection.targetBlock();
-                const connections = [];
+            compose: function(containerBlock) {
+                let clauseBlock = containerBlock.nextConnection.targetBlock();
+                let elifConnections = [];
+                let elifCount = 0;
                 let hasElse = false;
-
-                while (caseBlock) {
-                    if (caseBlock.type === 'elif_mutator') {
-                        connections.push(caseBlock.valueConnection_);
-                    } else if (caseBlock.type === 'else_mutator') {
-                        hasElse = true;
+                
+                while (clauseBlock) {
+                    switch (clauseBlock.type) {
+                        case 'elif_mutator':
+                            elifConnections[elifCount] = clauseBlock.valueConnection_;
+                            elifCount++;
+                            break;
+                        case 'else_mutator':
+                            hasElse = true;
+                            break;
+                        default:
+                            throw TypeError('Unknown block type: ' + clauseBlock.type);
                     }
-                    caseBlock = caseBlock.nextConnection &&
-                                caseBlock.nextConnection.targetBlock();
+                    clauseBlock = clauseBlock.nextConnection &&
+                        clauseBlock.nextConnection.targetBlock();
                 }
-
-                this.elifCount_ = connections.length;
+                
+                this.elifCount_ = elifCount;
                 this.hasElse_ = hasElse;
                 this.updateShape_();
-
+                
                 for (let i = 0; i < this.elifCount_; i++) {
-                    Blockly.Mutator.reconnect(connections[i], this, 'ELIF' + i);
+                    if (elifConnections[i]) {
+                        Blockly.Mutator.reconnect(elifConnections[i], this, 'ELIF' + i);
+                    }
                 }
             },
 
-            updateShape_: function () {
-                // 移除舊的 ELIF 和 ELSE 輸入
-                for (let i = 0; i < this.elifCount_; i++) {
-                    if (this.getInput('ELIF' + i)) {
-                        this.removeInput('ELIF' + i);
-                    }
-                    if (this.getInput('ELIF_DO' + i)) {
-                        this.removeInput('ELIF_DO' + i);
-                    }
+            updateShape_: function() {
+                // 移除現有的 elif 和 else 輸入
+                for (let i = 0; this.getInput('ELIF' + i); i++) {
+                    this.removeInput('ELIF' + i);
+                    this.removeInput('ELIF_DO' + i);
                 }
-
                 if (this.getInput('ELSE')) {
                     this.removeInput('ELSE');
                 }
-
-                // 添加新的 ELIF 輸入
+                
+                // 重新添加所需的輸入
                 for (let i = 0; i < this.elifCount_; i++) {
                     this.appendValueInput('ELIF' + i)
-                        .setCheck("Boolean") // 確保條件為布林值
-                        .appendField("否則如果");
+                        .setCheck('Boolean')
+                        .appendField('否則如果');
                     this.appendStatementInput('ELIF_DO' + i)
                         .setCheck(null)
-                        .appendField("執行");
+                        .appendField('執行');
                 }
-
-                // 添加 ELSE 輸入
+                
                 if (this.hasElse_) {
                     this.appendStatementInput('ELSE')
                         .setCheck(null)
-                        .appendField("否則執行");
+                        .appendField('否則執行');
                 }
             }
         };
 
-        // 定義輔助塊
+        // 其他輔助塊的定義保持不變
         Blockly.Blocks['if_mutator'] = {
-            init: function () {
-                this.appendDummyInput()
-                    .appendField("否則如果的狀況數量")
-                    .appendField(new Blockly.FieldNumber(0, 0, Infinity, 1), 'ELIF_COUNT');
-                this.setNextStatement(true);
+            init: function() {
                 this.setColour("#00abea");
-                this.setTooltip("");
-                this.setHelpUrl("");
+                this.appendDummyInput()
+                    .appendField('如果');
+                this.setNextStatement(true);
             }
         };
 
         Blockly.Blocks['elif_mutator'] = {
-            init: function () {
+            init: function() {
+                this.setColour("#00abea");
                 this.appendDummyInput()
-                    .appendField("否則如果");
+                    .appendField('否則如果');
                 this.setPreviousStatement(true);
                 this.setNextStatement(true);
-                this.setColour("#00abea");
-                this.setTooltip("");
-                this.setHelpUrl("");
                 this.valueConnection_ = null;
-            },
-
-            saveConnections: function () {
-                const input = this.getInput('ELIF');
-                if (input && input.connection.isConnected()) {
-                    this.valueConnection_ = input.connection.targetConnection;
-                }
             }
         };
 
         Blockly.Blocks['else_mutator'] = {
-            init: function () {
-                this.appendDummyInput()
-                    .appendField("否則");
-                this.setPreviousStatement(true);
+            init: function() {
                 this.setColour("#00abea");
-                this.setTooltip("");
-                this.setHelpUrl("");
+                this.appendDummyInput()
+                    .appendField('否則');
+                this.setPreviousStatement(true);
             }
         };
 
-        // 定義生成 C++ 代碼邏輯
-        Blockly.Cpp['if_block'] = function (block) {
-            const ifValue = Blockly.Cpp.valueToCode(block, 'IF_VALUE', Blockly.Cpp.ORDER_ATOMIC) || 'false'; // 預設值為 false
+        // C++ 代碼生成保持不變
+        Blockly.Cpp['if_block'] = function(block) {
+            const ifValue = Blockly.Cpp.valueToCode(block, 'IF_VALUE', Blockly.Cpp.ORDER_ATOMIC) || 'false';
             let code = `if (${ifValue}) {\n`;
             code += Blockly.Cpp.statementToCode(block, 'IF_DO');
-
+            
             for (let i = 0; i < block.elifCount_; i++) {
-                const elifValue = Blockly.Cpp.valueToCode(block, 'ELIF' + i, Blockly.Cpp.ORDER_ATOMIC) || 'false'; // 預設值為 false
-                code += `} \nelse if (${elifValue}) {\n`;
+                const elifValue = Blockly.Cpp.valueToCode(block, 'ELIF' + i, Blockly.Cpp.ORDER_ATOMIC) || 'false';
+                code += `} else if (${elifValue}) {\n`;
                 code += Blockly.Cpp.statementToCode(block, 'ELIF_DO' + i);
             }
-
+            
             if (block.hasElse_) {
-                code += '} \nelse {\n';
+                code += '} else {\n';
                 code += Blockly.Cpp.statementToCode(block, 'ELSE');
             }
-
+            
             code += '}\n';
             return code;
         };
 
-        // 定義 switch_block
         Blockly.Blocks['switch_block'] = {
-            init: function () {
+            init: function() {
                 this.setPreviousStatement(true);
                 this.appendValueInput("SWITCH_VALUE")
                     .setCheck(null)
@@ -2747,24 +2749,37 @@
                 this.setColour("#00abea");
                 this.setTooltip("Switch 語句");
                 this.setHelpUrl("");
-                this.caseCount_ = 0; // 初始化 case 計數器
+                this.caseCount_ = 0;
             },
 
-            mutationToDom: function () {
+            saveConnections: function(containerBlock) {
+                let clauseBlock = containerBlock.nextConnection.targetBlock();
+                let i = 0;
+                while (clauseBlock && clauseBlock.type === 'case_mutator') {
+                    const input = this.getInput('CASE' + i);
+                    clauseBlock.valueConnection_ = input && input.connection.targetConnection;
+                    clauseBlock = clauseBlock.nextConnection && clauseBlock.nextConnection.targetBlock();
+                    i++;
+                }
+            },
+
+            mutationToDom: function() {
+                if (!this.caseCount_) return null;
                 const container = Blockly.utils.xml.createElement('mutation');
                 container.setAttribute('caseCount', this.caseCount_);
                 return container;
             },
 
-            domToMutation: function (xmlElement) {
-                this.caseCount_ = parseInt(xmlElement.getAttribute('caseCount'), 10);
+            domToMutation: function(xmlElement) {
+                this.caseCount_ = parseInt(xmlElement.getAttribute('caseCount'), 10) || 0;
                 this.updateShape_();
             },
 
-            decompose: function (workspace) {
+            decompose: function(workspace) {
                 const containerBlock = workspace.newBlock('switch_mutator');
                 containerBlock.initSvg();
-
+                containerBlock.setFieldValue(this.caseCount_, 'CASE_COUNT');
+                
                 let connection = containerBlock.nextConnection;
                 for (let i = 0; i < this.caseCount_; i++) {
                     const caseBlock = workspace.newBlock('case_mutator');
@@ -2772,37 +2787,39 @@
                     connection.connect(caseBlock.previousConnection);
                     connection = caseBlock.nextConnection;
                 }
-
+                
                 return containerBlock;
             },
 
-            compose: function (containerBlock) {
-                let caseBlock = containerBlock.nextConnection.targetBlock();
-                const connections = [];
-
-                while (caseBlock) {
-                    connections.push(caseBlock.valueConnection_);
-                    caseBlock = caseBlock.nextConnection &&
-                                caseBlock.nextConnection.targetBlock();
+            compose: function(containerBlock) {
+                let clauseBlock = containerBlock.nextConnection.targetBlock();
+                let connections = [];
+                
+                while (clauseBlock) {
+                    if (clauseBlock.type === 'case_mutator') {
+                        connections.push(clauseBlock.valueConnection_);
+                    }
+                    clauseBlock = clauseBlock.nextConnection && clauseBlock.nextConnection.targetBlock();
                 }
-
+                
                 this.caseCount_ = connections.length;
                 this.updateShape_();
-
+                
                 for (let i = 0; i < this.caseCount_; i++) {
-                    Blockly.Mutator.reconnect(connections[i], this, 'CASE' + i);
+                    if (connections[i]) {
+                        Blockly.Mutator.reconnect(connections[i], this, 'CASE' + i);
+                    }
                 }
             },
 
-            updateShape_: function () {
-                // 移除舊的 CASE 輸入
-                for (let i = 0; i < this.caseCount_; i++) {
-                    if (this.getInput('CASE' + i)) {
-                        this.removeInput('CASE' + i);
-                    }
+            updateShape_: function() {
+                // Remove old inputs
+                for (let i = 0; this.getInput('CASE' + i); i++) {
+                    this.removeInput('CASE' + i);
+                    this.removeInput('CASE_DO' + i);
                 }
-
-                // 添加新的 CASE 輸入
+                
+                // Add new inputs
                 for (let i = 0; i < this.caseCount_; i++) {
                     this.appendValueInput('CASE' + i)
                         .setCheck(null)
@@ -2814,41 +2831,28 @@
             }
         };
 
-        // 定義 switch_mutator 用的輔助塊
         Blockly.Blocks['switch_mutator'] = {
-            init: function () {
+            init: function() {
                 this.appendDummyInput()
                     .appendField("切換的狀況數量")
                     .appendField(new Blockly.FieldNumber(0, 0, Infinity, 1), 'CASE_COUNT');
                 this.setNextStatement(true);
                 this.setColour("#00abea");
-                this.setTooltip("");
-                this.setHelpUrl("");
             }
         };
 
         Blockly.Blocks['case_mutator'] = {
-            init: function () {
+            init: function() {
                 this.appendDummyInput()
                     .appendField("狀況");
                 this.setPreviousStatement(true);
                 this.setNextStatement(true);
                 this.setColour("#00abea");
-                this.setTooltip("");
-                this.setHelpUrl("");
                 this.valueConnection_ = null;
-            },
-
-            saveConnections: function (containerBlock) {
-                const input = this.getInput('CASE');
-                if (input && input.connection.isConnected()) {
-                    this.valueConnection_ = input.connection.targetConnection;
-                }
             }
         };
 
-        // 定義生成 C++ 代碼邏輯
-        Blockly.Cpp['switch_block'] = function (block) {
+        Blockly.Cpp['switch_block'] = function(block) {
             const switchValue = Blockly.Cpp.valueToCode(block, 'SWITCH_VALUE', Blockly.Cpp.ORDER_ATOMIC) || '()';
             let code = `switch ${switchValue} {\n`;
 
@@ -2860,75 +2864,74 @@
 
             const defaultCode = Blockly.Cpp.statementToCode(block, 'DEFAULT');
             code += `  default:\n${defaultCode}    break;\n`;
-
             code += '}\n';
             return code;
         };
 
         Blockly.Blocks['str_generic'] = {
-            init: function() {
-                this.setColour("#71b700");
-                this.setOutput(true, "String");
-                this.setInputsInline(true);
-                this.setMutator(new Blockly.Mutator(['str_generic_item']));
-                this.itemCount_ = 2;
-                this.operator_ = ','; // 默認運算符
-                this.updateShape_();
-            },
-            mutationToDom: function() {
-                const container = document.createElement('mutation');
-                container.setAttribute('items', this.itemCount_);
-                container.setAttribute('operator', this.operator_);
-                return container;
-            },
-            domToMutation: function(xmlElement) {
-                this.itemCount_ = parseInt(xmlElement.getAttribute('items'), 10);
-                this.operator_ = xmlElement.getAttribute('operator') || '+';
-                this.updateShape_();
-            },
-            decompose: function(workspace) {
-                const containerBlock = workspace.newBlock('str_generic_container');
-                containerBlock.initSvg();
-                let connection = containerBlock.getInput('STACK').connection;
-                for (let i = 0; i < this.itemCount_; i++) {
-                    const itemBlock = workspace.newBlock('str_generic_item');
-                    itemBlock.initSvg();
-                    connection.connect(itemBlock.previousConnection);
-                    connection = itemBlock.nextConnection;
-                }
-                return containerBlock;
-            },
-            compose: function(containerBlock) {
-                let itemBlock = containerBlock.getInputTargetBlock('STACK');
-                const connections = [];
-                while (itemBlock) {
-                    connections.push(itemBlock.valueConnection_);
-                    itemBlock = itemBlock.nextConnection && itemBlock.nextConnection.targetBlock();
-                }
-                this.itemCount_ = connections.length;
-                this.updateShape_();
-                for (let i = 0; i < this.itemCount_; i++) {
-                    Blockly.Mutator.reconnect(connections[i], this, 'ADD' + i);
-                }
-            },
-            updateShape_: function() {
-                for (let i = this.itemCount_ - 1; i >= 0; i--) {
-                    if (this.getInput('ADD' + i)) {
-                        this.removeInput('ADD' + i);
+                    init: function() {
+                        this.setColour("#71b700");
+                        this.setOutput(true, "String");
+                        this.setInputsInline(true);
+                        this.setMutator(new Blockly.Mutator(['str_generic_item']));
+                        this.itemCount_ = 2;
+                        this.operator_ = ','; // 默認運算符
+                        this.updateShape_();
+                    },
+                    mutationToDom: function() {
+                        const container = document.createElement('mutation');
+                        container.setAttribute('items', this.itemCount_);
+                        container.setAttribute('operator', this.operator_);
+                        return container;
+                    },
+                    domToMutation: function(xmlElement) {
+                        this.itemCount_ = parseInt(xmlElement.getAttribute('items'), 10);
+                        this.operator_ = xmlElement.getAttribute('operator') || '+';
+                        this.updateShape_();
+                    },
+                    decompose: function(workspace) {
+                        const containerBlock = workspace.newBlock('str_generic_container');
+                        containerBlock.initSvg();
+                        let connection = containerBlock.getInput('STACK').connection;
+                        for (let i = 0; i < this.itemCount_; i++) {
+                            const itemBlock = workspace.newBlock('str_generic_item');
+                            itemBlock.initSvg();
+                            connection.connect(itemBlock.previousConnection);
+                            connection = itemBlock.nextConnection;
+                        }
+                        return containerBlock;
+                    },
+                    compose: function(containerBlock) {
+                        let itemBlock = containerBlock.getInputTargetBlock('STACK');
+                        const connections = [];
+                        while (itemBlock) {
+                            connections.push(itemBlock.valueConnection_);
+                            itemBlock = itemBlock.nextConnection && itemBlock.nextConnection.targetBlock();
+                        }
+                        this.itemCount_ = connections.length;
+                        this.updateShape_();
+                        for (let i = 0; i < this.itemCount_; i++) {
+                            Blockly.Mutator.reconnect(connections[i], this, 'ADD' + i);
+                        }
+                    },
+                    updateShape_: function() {
+                        for (let i = this.itemCount_ - 1; i >= 0; i--) {
+                            if (this.getInput('ADD' + i)) {
+                                this.removeInput('ADD' + i);
+                            }
+                        }
+                        for (let i = 0; i < this.itemCount_; i++) {
+                            const input = this.appendValueInput('ADD' + i).setCheck("String");
+                            if (i > 0) {
+                                input.appendField(this.operator_);
+                            }
+                        }
+                    },
+                    setOperator: function(operator) {
+                        this.operator_ = operator;
+                        this.updateShape_();
                     }
-                }
-                for (let i = 0; i < this.itemCount_; i++) {
-                    const input = this.appendValueInput('ADD' + i).setCheck("String");
-                    if (i > 0) {
-                        input.appendField(this.operator_);
-                    }
-                }
-            },
-            setOperator: function(operator) {
-                this.operator_ = operator;
-                this.updateShape_();
-            }
-        };
+                };
 
         Blockly.Blocks['str_generic_container'] = {
             init: function() {
