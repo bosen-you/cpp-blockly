@@ -30,9 +30,8 @@ class Code_and_Text(BaseModel):
     test_file : str
 
 # create file
-unique_filename = f'program_{uuid.uuid4().hex}' # make a unique filename (to prevent repeatly)
-source_file = f'{unique_filename}.cpp'
-executable_file = f'{unique_filename}'
+source_file = 'main.cpp'
+executable_file = 'main'
 test_file = 'test.txt'
 
 @app.get('/')
@@ -86,7 +85,6 @@ async def compile_and_run_code(code : Code_and_Text):
     command = ['g++', source_file, '-o', executable_file]
     try:
         result = subprocess.run(command, check = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE, text = True)
-        subprocess.run(['rm' , source_file])
         with open(test_file, 'w') as f:
             f.write(code.test_file)
 
@@ -100,6 +98,5 @@ async def compile_and_run_code(code : Code_and_Text):
             return {"status" : "error" , "message" : e.stderr}
     
     except subprocess.CalledProcessError as e:
-        subprocess.run(['rm' , source_file])
         error = f'{e.stderr}'.replace(f'{source_file}:', '')
         return {"status" : "error" , "message" : error}
