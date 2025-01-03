@@ -451,6 +451,24 @@
                   {"kind": "block", "type": "function_call"}
                 ]
               },
+              {//struct
+                "kind": "category",
+                "name": "結構",
+                "colour": "#f4a460",
+                "contents": [
+                  {"kind": "block", "type": "def_struct"},
+                  {"kind": "block", "type": "get_struct"},
+                ]
+              },
+              {//class
+                "kind": "category",
+                "name": "類別",
+                "colour": "#e9967a",
+                "contents": [
+                  {"kind": "block", "type": "def_class"},
+                  {"kind": "block", "type": "get_class"},
+                ]
+              },
               { // variable
                 "kind": "category",
                 "name": "變數與資料類型",
@@ -1446,7 +1464,83 @@
                     "tooltip": "獲取位置的值",
                     "helpUrl": ""
                 },
-                
+                 //struct
+                { //def struct
+                    "type": "def_struct",
+                    "message0": "結構 名字: %1 ",
+                    "args0": [{
+                            "type": "field_input",
+                            "name": "struct_name"
+                    }],
+                    "message1": "%1",
+                    "args1": [{
+                        "type": "input_statement",
+                        "name": "def_var"
+                    }],
+                    "colour": "#f4a460",
+                    "tooltip": "define a struct",
+                    "helpurl":""
+                },
+                { //get struct
+                    "type": "get_struct",
+                    "message0": "結構 名字: %1, 變數名: %2",
+                    "args0": [{
+                            "type": "field_input",
+                            "name": "struct_name",
+                        },
+                        {
+                            "type": "field_input",
+                            "name": "var_name"
+                        }
+                    ],
+                    "colour": "#f4a460",
+                    "previousStatement": null,
+                    "nextStatement": null,
+                    "tooltip": "",
+                    "helpUrl": ""
+                },
+
+                //class
+                {
+                    "type": "def_class",
+                    "message0": "類別 名子: %1",
+                    "args0": [{
+                            "type": "field_input",
+                            "name": "class_name"
+                        }],
+                    "message1": "公開%1",
+                    "args1": [{
+                        "type": "input_statement",
+                        "name": "public"
+                    }],
+                    "message2": "私人%1",
+                    "args2": [{
+                        "type": "input_statement",
+                        "name": "private"
+                    }],
+                    "colour": "#e9967a",
+                    "tooltip": "define a class",
+                    "helpurl":""
+                },
+                { //get class
+                    "type": "get_class",
+                    "message0": "類別 名字: %1, 變數名: %2",
+                    "args0": [{
+                            "type": "field_input",
+                            "name": "class_name",
+                        },
+                        {
+                            "type": "field_input",
+                            "name": "var_name"
+                        }
+                    ],
+                    "colour": "#ffc0cb",
+                    "previousStatement": null,
+                    "nextStatement": null,
+                    "tooltip": "",
+                    "helpUrl": ""
+                },
+
                 //Standard Library
                 //math
                 { //math caculacte
@@ -3568,6 +3662,44 @@
             }
         };
 
+        //struct
+        Blockly.Cpp['def_struct'] = function(block) {
+            var struct_name = block.getFieldValue('struct_name');
+            var def_var = Blockly.Cpp.statementToCode(block, 'def_var');
+            return `struct ${struct_name} {\n${def_var}};`;
+        }
+
+        Blockly.Cpp['get_struct'] = function(block) {
+            var struct_name = block.getFieldValue('struct_name');
+            var var_name = block.getFieldValue('var_name');
+            return `${struct_name} ${var_name};`;
+        };
+
+        //class
+        Blockly.Cpp['def_class'] = function(block) {
+            var class_name = block.getFieldValue('class_name');
+            var public = Blockly.Cpp.statementToCode(block, 'public') || '';
+            var private = Blockly.Cpp.statementToCode(block, 'private') || '';
+
+            var code = `class ${class_name} {\n`;
+            if (public !== '') {
+                code += `  public:\n${public}\n`;
+            }
+            if (private !== '') {
+                code += `  private:\n${private}\n`;
+            }
+            code += `};`;
+
+            return code;
+        };
+
+ 
+        Blockly.Cpp['get_class'] = function(block) {
+            var class_name = block.getFieldValue('class_name');
+            var var_name = block.getFieldValue('var_name');
+            return `${class_name} ${var_name};`;
+        };
+        
         //Standard Library
         //math
         Blockly.Cpp['math_random'] = function(block) {
