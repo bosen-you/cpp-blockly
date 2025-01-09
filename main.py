@@ -3,7 +3,6 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import subprocess
-import uuid  # create only filename
 
 
 app = FastAPI()
