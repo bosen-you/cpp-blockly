@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-tw">
 <head>
@@ -417,30 +418,6 @@
                 ]
               },
               {"kind": "sep"},
-              { // main structure
-                "kind": "category",
-                "name": "基礎框架",
-                "colour": "#ff3131",
-                "contents": [
-                  {"kind": "label", "text": "警告! int main()一個檔案只能有一個!!!"},
-                  {
-                    "kind": "block",
-                    "type": "include_bits/stdc++.h",
-                    "next": {
-                        "block": {
-                        "kind": "block",
-                        "type": "using_namespace_std",
-                        "next": {
-                            "block": {
-                            "kind": "block",
-                            "type": "main_block"
-                          }
-                        }
-                      }
-                    }
-                  }
-                ]
-              },
               { // function
                 "kind": "category",
                 "name": "自定義函式",
@@ -476,21 +453,15 @@
                   {"kind": "block", "type": "nullptr"}
                 ]
               },
-              {"kind": "sep"},
-              {//struct
+              { // struct & class
                 "kind": "category",
-                "name": "結構",
+                "name": "結構與類別",
                 "colour": "#f4a460",
                 "contents": [
+                  {"kind": "label", "text": "Struct"},
                   {"kind": "block", "type": "def_struct"},
-                  {"kind": "block", "type": "get_struct"}
-                ]
-              },
-              {//class
-                "kind": "category",
-                "name": "類別",
-                "colour": "#e9967a",
-                "contents": [
+                  {"kind": "block", "type": "get_struct"},
+                  {"kind": "label", "text": "Class"},
                   {"kind": "block", "type": "def_class"},
                   {"kind": "block", "type": "get_class"}
                 ]
@@ -586,14 +557,48 @@
             renderer: 'zelos'/*minimalist*/
         });
 
+        Blockly.svgResize(workspace);
+
+        // 先執行縮放到適合大小
+        workspace.zoomToFit();
+
+        // 延遲進一步調整縮放比例
+        setTimeout(() => {
+            workspace.setScale(0.68); // 設置縮放比例為 0.68
+            const metrics = workspace.getMetrics();
+
+            // 重新置中
+            const xOffset = (metrics.viewWidth - metrics.contentWidth * 0.5) / 2.5;
+            const yOffset = (metrics.viewHeight - metrics.contentHeight * 0.5) / 2.2;
+            workspace.scroll(xOffset, yOffset);
+        }, 100); // 延遲 100 毫秒以確保 `zoomToFit` 生效
+
+        // 初始化 main_block
+        function initializeMainBlock() {
+            const existingMainBlock = workspace.getBlocksByType('main_block', false);
+            if (existingMainBlock.length === 0) {
+                const mainBlock = workspace.newBlock('main_block');
+                mainBlock.initSvg();
+                mainBlock.render();
+                mainBlock.setMovable(true); // 設置不可移動
+                mainBlock.setDeletable(false); // 設置不可刪除
+            }
+        }
+
+        // 限制工作區內只能有一個 main_block
+        workspace.addChangeListener(() => {
+            const mainBlocks = workspace.getBlocksByType('main_block', false);
+            if (mainBlocks.length > 1) {
+                mainBlocks.slice(1).forEach(block => block.dispose()); // 刪除多餘的 main_block
+            }
+            initializeMainBlock();
+            updateCodeOutput();
+        });
+
         //let toolboxXml = Blockly.Xml.textToDom(toolbox);
 
         Blockly.Cpp = new Blockly.Generator('Cpp');
         Blockly.Cpp.ORDER_ATOMIC = 1;
-
-        workspace.addChangeListener(() => {
-            updateCodeOutput();
-        });
 
         const originalBlockToCode = Blockly.Cpp.blockToCode;
 
@@ -614,7 +619,7 @@
 
         var id_code = '';
         async function updateCodeOutput() {
-            id_code = Blockly.Cpp.workspaceToCode(workspace); // 獲取 Blockly 生成的 C++ 代碼
+            id_code = '#include <bits/stdc++.h>\nusing namespace std;\n\n' + Blockly.Cpp.workspaceToCode(workspace); // 獲取 Blockly 生成的 C++ 代碼
             var lines = id_code.split('\n'); // 按行分割代碼
             var outputElement = document.getElementById('code-output');
 
@@ -772,7 +777,7 @@
                         "name": "def_var"
                     }],
                     "colour": "#f4a460",
-                    "tooltip": "define a struct",
+                    "tooltip": "定義一個結構",
                     "helpurl":""
                 },
                 { //get struct
@@ -790,30 +795,30 @@
                     "colour": "#f4a460",
                     "previousStatement": null,
                     "nextStatement": null,
-                    "tooltip": "",
+                    "tooltip": "取得一個結構的資料",
                     "helpUrl": ""
                 },
 
                 //class
-                {
+                { //class
                     "type": "def_class",
                     "message0": "類別 名子: %1",
                     "args0": [{
                             "type": "field_input",
                             "name": "class_name"
                         }],
-                    "message1": "公開%1",
+                    "message1": "公開 %1",
                     "args1": [{
                         "type": "input_statement",
                         "name": "public"
                     }],
-                    "message2": "私人%1",
+                    "message2": "私人 %1",
                     "args2": [{
                         "type": "input_statement",
                         "name": "private"
                     }],
                     "colour": "#e9967a",
-                    "tooltip": "define a class",
+                    "tooltip": "定義一個類別",
                     "helpurl":""
                 },
                 { //get class
@@ -831,19 +836,11 @@
                     "colour": "#e9967a",
                     "previousStatement": null,
                     "nextStatement": null,
-                    "tooltip": "",
+                    "tooltip": "取得一個類別的資料",
                     "helpUrl": ""
                 },
 
                 //initializaiton
-                { //#include <bits/stdc++.h>
-                    "type": "include_bits/stdc++.h",
-                    "message0": "引入萬能頭文件",
-                    "nextStatement": null,
-                    "colour": "#C00000",
-                    "tooltip": "Include all",
-                    "helpUrl": ""
-                },
                 { //int main
                     "type": "main_block",
                     "message0": "主程式框架",
@@ -854,27 +851,17 @@
                     }],
                     "message2": "回傳值: 0",
                     "colour": "#24B324",
-                    "previousStatement": null,
                     "inputsInline": false,
-                    "tooltip": "Main function for executing code",
+                    "tooltip": "運行主要程式碼的框架",
                     "helpUrl": ""
                 },        
-                { //using namespace std
-                    "type": "using_namespace_std",
-                    "message0": "使用std命名空間",
-                    "previousStatement": null,
-                    "nextStatement": null,
-                    "colour": "#3d7fd6",
-                    "tooltip": "Use the standard namespace",
-                    "helpUrl": ""
-                },
                 { //ios sync
                     "type": "boost_ios_sync",
                     "message0": "輸入輸出同步禁用",
                     "previousStatement": null,
                     "nextStatement": null,
                     "colour": 160,
-                    "tooltip": "禁用同步以提高輸入輸出效率",
+                    "tooltip": "輸入輸出同步禁用",
                     "helpUrl": ""
                 },
                 { //cin tie
@@ -898,23 +885,22 @@
                     }],
                     "output": "String",
                     "colour": "#FF8C00",
-                    "tooltip": "A text value",
-                    "helpUrl": ""
+                    "tooltip": "文本"
                 },
                 { //"\n"
                     "type": "add_line",
                     "message0": "換行",
                     "output": "String",
                     "colour": "#FF8C00",
-                    "tooltip": "A text value",
+                    "tooltip": "換行符\\n",
                     "helpUrl": ""
                 },
                 { //tab
                     "type": "tab",
-                    "message0": "tab",
+                    "message0": "Tab(4x)",
                     "output": "String",
                     "colour": "#FF8C00",
-                    "tooltip": "A text value",
+                    "tooltip": "Tab鍵",
                     "helpUrl": ""
                 },
                 { //number
@@ -941,7 +927,7 @@
                     "colour": "#FF8C00",
                     "previousStatement": null,
                     "nextStatement": null,
-                    "tooltip": "添加註解",
+                    "tooltip": "註解",
                     "helpUrl": ""
                 },
 
@@ -981,7 +967,7 @@
                     "nextStatement": null,
                     "inputsInline": true,
                     "colour": "#00abea",
-                    "tooltip": "重複執行直到條件為假",
+                    "tooltip": "For 迴圈",
                     "helpUrl": ""
                 },
                 { //while
@@ -999,6 +985,7 @@
                     }],
                     "previousStatement": null,
                     "nextStatement": null,
+                    "tooltip": "While 迴圈",
                     "colour": "#00abea"
                 },
                
@@ -1008,7 +995,7 @@
                     "message0": "結束執行",
                     "colour": "#00abea",
                     "previousStatement": null,
-                    "tooltip": "退出當前的循環或 switch 語句",
+                    "tooltip": "退出當前的迴圈/遞迴",
                     "helpUrl": ""
                 },
                 { //continue
@@ -1021,14 +1008,14 @@
                 },
                 { //return
                     "type": "return_block",
-                    "message0": "回傳值: %1",
+                    "message0": "回傳 %1",
                     "args0": [{
                         "type": "input_value",
                         "name": "RETURN_VALUE"
                     }],
                     "colour": "#00abea",
                     "previousStatement": null,
-                    "tooltip": "從函式返回值",
+                    "tooltip": "返回值",
                     "helpUrl": ""
                 },
                 
@@ -1057,13 +1044,13 @@
                             "type" : "field_dropdown",
                             "name" : "expression",
                             "options" : [
-                                ["return", "return"],
-                                ["no", "no"]
+                                ["回傳", "return"],
+                                ["不回傳", "no"]
                             ]
                         }
                     ],
                     "colour": "#db00db",
-                    "tooltip": "定義一個基本的 C++ 函數",
+                    "tooltip": "定義一個沒有回傳值的函數",
                     "helpUrl": ""
                 },
                 { //def function void
@@ -1077,7 +1064,7 @@
                                 ["浮點數", "float"],
                                 ["雙重浮點數", "double"],
                                 ["字元", "char"],
-                                ["字串", "std::string"]
+                                ["字串", "string"]
                             ]
                         },
                         {
@@ -1102,7 +1089,7 @@
                         }
                     ],
                     "colour": "#db00db",
-                    "tooltip": "定義一個基本的 C++ 函數",
+                    "tooltip": "定義一個有回傳值的函數",
                     "helpUrl": ""
                 },
                 { //cll function
@@ -1122,7 +1109,7 @@
                     "colour": "#db00db",
                     "previousStatement": null,
                     "nextStatement": null,
-                    "tooltip": "調用一個函數",
+                    "tooltip": "呼叫函數",
                     "helpUrl": ""
                 },        
                 
@@ -1155,7 +1142,7 @@
                                 ["浮點數", "float"],
                                 ["雙重浮點數", "double"],
                                 ["字元", "char"],
-                                ["字串", "std::string"],
+                                ["字串", "string"],
                                 ["更長的整數", "long long"]
                             ]
                         },
@@ -1172,7 +1159,7 @@
                     "colour": "#DABD00",
                     "previousStatement" : null,
                     "nextStatement" : null,
-                    "tooltip" : "",
+                    "tooltip" : "定義一個變數",
                     "helpurl" : ""
                 },
                 { //variable equals
@@ -1191,7 +1178,7 @@
                     "colour": "#DABD00",
                     "previousStatement": null,
                     "nextStatement": null,
-                    "tooltip": "賦予變數新的值或算式",
+                    "tooltip": "賦予變數值",
                     "helpUrl": ""
                 },
                 { //get variable vaule
@@ -1204,7 +1191,7 @@
                     }],
                     "output": null,
                     "colour": "#DABD00",
-                    "tooltip": "獲取變數的值",
+                    "tooltip": "取得一個變數的資料",
                     "helpUrl": ""
                 },                
               
@@ -1234,7 +1221,7 @@
                     "output": "Boolean",
                     "colour": "#29A1CD",
                     "inputsInline": true,
-                    "tooltip": "or and xor",
+                    "tooltip": "運算符",
                     "helpUrl": ""
                 },
                 { //logic operators
@@ -1264,7 +1251,7 @@
                     "output": "Boolean",
                     "colour": "#29A1CD",
                     "inputsInline": true,
-                    "tooltip": "Performs selected logical or comparison operation.",
+                    "tooltip": "運算符",
                     "helpUrl": ""
                 },
                 { //logic not
@@ -1276,7 +1263,7 @@
                     }],
                     "output": "Boolean",
                     "colour": "#29A1CD",
-                    "tooltip": "Returns true if the condition is false.",
+                    "tooltip": "如果條件為false則回傳true",
                     "helpUrl": ""
                 },
                 { //var caculacte
@@ -1305,7 +1292,7 @@
                     "output": "Number",
                     "colour": "#29A1CD",
                     "inputsInline": true,
-                    "tooltip": "運算",
+                    "tooltip": "簡化運算符",
                     "helpUrl": ""
                 },
 
@@ -1321,7 +1308,7 @@
                     "previousStatement": null,
                     "nextStatement": null,
                     "colour": "#24B324",
-                    "tooltip": "Inputs multiple values from the console.",
+                    "tooltip": "輸入",
                     "helpUrl": ""
                 },
                 { //cout
@@ -1344,7 +1331,7 @@
                     "previousStatement": null,
                     "nextStatement": null,
                     "colour": "#24B324",
-                    "tooltip": "Outputs value to the console.",
+                    "tooltip": "輸出",
                     "helpUrl": ""
                 },
                                 
@@ -1354,7 +1341,7 @@
                     "message0": "True",
                     "output": "Boolean",
                     "colour": "#29A1CD",
-                    "tooltip": "",
+                    "tooltip": "是/真",
                     "helpUrl": ""
                 },
                 { //false
@@ -1362,7 +1349,7 @@
                     "message0": "False",
                     "output": "Boolean",
                     "colour": "#29A1CD",
-                    "tooltip": "",
+                    "tooltip": "否/假",
                     "helpUrl": ""
                 },
                 
@@ -1372,7 +1359,7 @@
                     "message0": "nullptr",
                     "output": "Pointer",
                     "colour": "#5f9ea0",
-                    "tooltip": "",
+                    "tooltip": "空指標的常值",
                     "helpUrl": ""
                 },
                 { //declare_pointer
@@ -1403,7 +1390,7 @@
                                 ["浮點數", "float"],
                                 ["雙重浮點數", "double"],
                                 ["字元", "char"],
-                                ["字串", "std::string"],
+                                ["字串", "string"],
                                 ["更長的整數", "long long"]
                             ]
                         },
@@ -1427,7 +1414,7 @@
                     "colour": "#5f9ea0",
                     "previousStatement" : null,
                     "nextStatement" : null,
-                    "tooltip" : "",
+                    "tooltip" : "定義一個指標",
                     "helpurl" : ""
                 },
                 { //declart_reference
@@ -1458,7 +1445,7 @@
                                 ["浮點數", "float"],
                                 ["雙重浮點數", "double"],
                                 ["字元", "char"],
-                                ["字串", "std::string"],
+                                ["字串", "string"],
                                 ["更長的整數", "long long"],
                             ]
                         },
@@ -1474,7 +1461,7 @@
                     "colour": "#5f9ea0",
                     "previousStatement" : null,
                     "nextStatement" : null,
-                    "tooltip" : "",
+                    "tooltip" : "宣告一個位置",
                     "helpurl" : ""
                 },
                 { //ptr equal
@@ -1668,7 +1655,7 @@
                     }],
                     "output": "Number",
                     "colour": "#00A9E6",
-                    "tooltip": "隨機數生成",
+                    "tooltip": "生成隨機數",
                     "helpUrl": ""
                 },
                 
@@ -1684,7 +1671,7 @@
                                 ["浮整數", "float"],
                                 ["雙重浮點數", "double"],
                                 ["字元", "char"],
-                                ["字串", "std::string"],
+                                ["字串", "string"],
                                 ["更長的整數", "long long"]
                             ]
                         },
@@ -1701,10 +1688,10 @@
                             "name": "vec_content"
                         }
                     ],
-                    "colour": "#6A5ACD",
+                    "colour": "#3d7fd6",
                     "previousStatement": null,
                     "nextStatement": null,
-                    "tooltip": "create a vector, vector is a dynamic array",
+                    "tooltip": "創建一個vector陣列，vector是會自動擴展容量的陣列",
                     "helpurl": ""
                 },
                 { //vector push back
@@ -1723,8 +1710,8 @@
                     "output": null,
                     "previousStatement": null,
                     "nextStatement": null,
-                    "colour": "#6A5ACD",
-                    "tooltip": "push back number to vector",
+                    "colour": "#3d7fd6",
+                    "tooltip": "新增元素至 vector 的尾端，必要時會進行記憶體組態。",
                     "helpUrl": ""
                 },
                 { //vector pop back
@@ -1737,8 +1724,8 @@
                     "inputsInline": true,
                     "previousStatement": null,
                     "nextStatement": null,
-                    "colour": "#6A5ACD",
-                    "tooltip": "push back number to vector",
+                    "colour": "#3d7fd6",
+                    "tooltip": "刪除 vector 最尾端的元素。",
                     "helpUrl": ""
                 },
                 { //vector clear
@@ -1751,8 +1738,8 @@
                     "inputsInline": true,
                     "previousStatement": null,
                     "nextStatement": null,
-                    "colour": "#6A5ACD",
-                    "tooltip": "vector size",
+                    "colour": "#3d7fd6",
+                    "tooltip": "清空所有元素。",
                     "helpUrl": ""
                 },
                 { //vector size
@@ -1764,8 +1751,8 @@
                     }],
                     "inputsInline": true,
                     "output": null,
-                    "colour": "#6A5ACD",
-                    "tooltip": "vector size",
+                    "colour": "#3d7fd6",
+                    "tooltip": "取得 vector 目前持有的元素個數。",
                     "helpUrl": ""
                 },
                 { //vec empty
@@ -1777,8 +1764,9 @@
                             "name" : "vec_name"
                         }
                     ],
-                    "colour": "#6A5ACD",
+                    "colour": "#3d7fd6",
                     "output" : null,
+                    "tooltip": "如果 vector 內部為空，則傳回 true 值。",
                     "helpUrl": ""
                 },
                 { //vector insert
@@ -1798,11 +1786,11 @@
                             "name" : "value"
                         }
                     ],
-                    "colour": "#6A5ACD",
+                    "colour": "#3d7fd6",
                     "inputsInline": true,
                     "previousStatement" : null,
                     "nextStatement" : null,
-                    "tooltip" : "create a vector, vector is a dynamic array",
+                    "tooltip" : "插入一個或多個元素至 vector 內的任意位置。",
                     "helpurl" : ""
                 },
                 { //vector erase
@@ -1822,11 +1810,11 @@
                             "name" : "value"
                         }
                     ],
-                    "colour": "#6A5ACD",
+                    "colour": "#3d7fd6",
                     "inputsInline": true,
                     "previousStatement" : null,
                     "nextStatement" : null,
-                    "tooltip" : "create a vector, vector is a dynamic array",
+                    "tooltip" : "刪除 vector 中一個或多個元素。",
                     "helpurl" : ""
                 },
                 { //emplace back
@@ -1847,13 +1835,13 @@
                     "inputsInline": true,
                     "output": null,
                     "nextStatement": null,
-                    "colour": "#6A5ACD",
-                    "tooltip": "push back number to vector",
+                    "colour": "#3d7fd6",
+                    "tooltip": "直接在vector內建立物件",
                     "helpUrl": ""
                 },
                 { //vec begin
                     "type": "vec_begin",
-                    "message0": "陣列 %1 的第一個(begin)",
+                    "message0": "陣列 %1 (begin)",
                     "args0": [{
                             "type": "field_input",
                             "name": "vec_name",
@@ -1863,11 +1851,12 @@
                     ],
                     "colour": "#778899",
                     "output": null,
+                    "tooltip": "回傳一個迭代器，它指向 vector 第一個元素。",
                     "helpUrl": ""
                 },
                 { //vec end
                     "type": "vec_end",
-                    "message0": "陣列 %1 的最後一個(end)",
+                    "message0": "陣列 %1 (end)",
                     "args0": [{
                             "type": "field_input",
                             "name": "vec_name",
@@ -1877,11 +1866,12 @@
                     ],
                     "colour": "#778899",
                     "output": null,
+                    "tooltip": "回傳一個反向迭代器，它指向 vector 最尾端元素的下一個位置",
                     "helpUrl": ""
                 },
                 { //vec rbegin
                     "type": "vec_rbegin",
-                    "message0": "陣列 %1 的最後一個(rbegin)",
+                    "message0": "陣列 %1 (rbegin)",
                     "args0": [{
                             "type": "field_input",
                             "name": "vec_name",
@@ -1891,11 +1881,12 @@
                     ],
                     "colour": "#778899",
                     "output": null,
+                    "tooltip": "回傳一個迭代器，它指向 vector 最尾端元素的。",
                     "helpUrl": ""
                 },
                 { //vec rend
                     "type": "vec_rend",
-                    "message0": "陣列 %1 的第一個(rend)",
+                    "message0": "陣列 %1 (rend)",
                     "args0": [{
                             "type": "field_input",
                             "name": "vec_name",
@@ -1905,6 +1896,7 @@
                     ],
                     "colour": "#778899",
                     "output": null,
+                    "tooltip": "回傳一個迭代器，它指向 vector 的第一個元素的前一個位置。",
                     "helpUrl": ""
                 },
                                 
@@ -1921,7 +1913,7 @@
                                 ["浮點數", "float"],
                                 ["雙重浮點數", "double"],
                                 ["字元", "char"],
-                                ["字串", "std::string"],
+                                ["字串", "string"],
                                 ["更長的整數", "long long"]
                             ]
                         },
@@ -1933,7 +1925,7 @@
                                 ["浮點數", "float"],
                                 ["雙重浮點數", "double"],
                                 ["字元", "char"],
-                                ["字串", "std::string"],
+                                ["字串", "string"],
                                 ["更長的整數", "long long"]
                             ]
                         },
@@ -2055,6 +2047,7 @@
                     ],
                     "colour": "#778899",
                     "output": null,
+                    "tooltip": ""
                     "helpUrl": ""
                 },
                 { //map clear
@@ -2068,7 +2061,7 @@
                     "inputsInline": true,
                     "previousStatement": null,
                     "nextStatement": null,
-                    "tooltip": "map size",
+                    "tooltip": "清空map陣列",
                     "helpUrl": ""
                 },
                 { //map size
@@ -2081,7 +2074,7 @@
                     "colour": "#20b2aa",
                     "inputsInline": true,
                     "output": null,
-                    "tooltip": "map size",
+                    "tooltip": "map陣列大小",
                     "helpUrl": ""
                 },
                 { //map empty
@@ -2095,6 +2088,7 @@
                 ],
                 "colour": "#20b2aa",
                 "output" : null,
+                "tooltip" : "判斷是否為空",
                 "helpUrl": ""
                 },
                 { //map first
@@ -2112,7 +2106,7 @@
                     ],
                     "output" : null,
                     "colour": "#20b2aa",
-                    "tooltip": "map key(first)",
+                    "tooltip": "取map中的key(first)",
                     "helpUrl": ""
                 },
                 { //map second
@@ -2130,7 +2124,7 @@
                     ],
                     "output" : null,
                     "colour": "#20b2aa",
-                    "tooltip": "map value(second)",
+                    "tooltip": "取map的value(second)",
                     "helpUrl": ""
                 },
                 { //map find
@@ -2148,7 +2142,7 @@
                     ],
                     "output" : null,
                     "colour": "#20b2aa",
-                    "tooltip": "find key in map\nif find the key return key",
+                    "tooltip": "尋找元素",
                     "helpUrl": ""
                 },
 
@@ -2164,7 +2158,7 @@
                                 ["浮點數", "float"],
                                 ["雙重浮點數", "double"],
                                 ["字元", "char"],
-                                ["字串", "std::string"],
+                                ["字串", "string"],
                                 ["更長的整數", "long long"]
                             ]
                         },
@@ -2187,7 +2181,7 @@
                     "colour": "#ff5757",
                     "previousStatement": null,
                     "nextStatement": null,
-                    "tooltip": "create a vector, vector is a dynamic array",
+                    "tooltip": "創建一個矩陣",
                     "helpurl": ""
                 },
                 { //array_name_block
@@ -2202,7 +2196,7 @@
                     ],
                     "colour": "#ff5757",
                     "output": null,
-                    "tooltip": "array name",
+                    "tooltip": "矩陣",
                     "helpurl": ""
                 },
                 { //array_content
@@ -2214,7 +2208,7 @@
                     }],
                     "colour": "#ff5757",
                     "output": null,
-                    "tooltip": "array name",
+                    "tooltip": "矩陣中的元素",
                     "helpurl": ""
                 },
                 { //array[i]
@@ -2232,7 +2226,7 @@
                     ],
                     "colour": "#ff5757",
                     "output": null,
-                    "tooltip": "array name",
+                    "tooltip": "矩陣i 位置的值",
                     "helpurl": ""
                 },
 
@@ -2242,7 +2236,7 @@
                     "message0": "取得目前時間戳記",
                     "output": "time_t",
                     "colour": "#eac800",
-                    "tooltip": "Returns the current time as a timestamp.",
+                    "tooltip": "以一個時間戳回傳正確時間",
                     "helpUrl": "",
                     "previousStatement": null,
                     "nextStatement": null
@@ -2256,7 +2250,7 @@
                     ],
                     "output": "Number",
                     "colour": "#eac800",
-                    "tooltip": "Calculates the difference in seconds between two timestamps.",
+                    "tooltip": "計算兩個時間戳之間的秒數差",
                     "helpUrl": "",
                     "previousStatement": null,
                     "nextStatement": null
@@ -2269,7 +2263,7 @@
                     ],
                     "output": "tm",
                     "colour": "#eac800",
-                    "tooltip": "Converts a timestamp to local time as a structure.",
+                    "tooltip": "以一個結構轉換一個時間戳至本地時間",
                     "helpUrl": "",
                     "previousStatement": null,
                     "nextStatement": null
@@ -2282,7 +2276,7 @@
                     ],
                     "output": "tm",
                     "colour": "#eac800",
-                    "tooltip": "Converts a timestamp to UTC time as a structure.",
+                    "tooltip": "以一個結構轉換一個時間戳至UTC時間",
                     "helpUrl": "",
                     "previousStatement": null,
                     "nextStatement": null
@@ -2296,26 +2290,31 @@
                     ],
                     "output": "String",
                     "colour": "#eac800",
-                    "tooltip": "Formats a time structure into a string using the given format.",
+                    "tooltip": "使用給定格式將時間結構格式化為字串。",
                     "helpUrl": "",
                     "previousStatement": null,
                     "nextStatement": null
                 },
                 { //set time structure
                     "type": "set_time_structure",
-                    "message0": "設定時間結構: 年 %1 月 %2 日 %3 小時 %4 分鐘 %5 秒 %6",
-                    "args0": [
+                    "message0": "設定時間結構: ",
+                    "message1": "年 %1 月 %2 日 %3",
+                    "args1": [
                         { "type": "input_value", "name": "YEAR", "check": "Number" },
                         { "type": "input_value", "name": "MONTH", "check": "Number" },
-                        { "type": "input_value", "name": "DAY", "check": "Number" },
+                        { "type": "input_value", "name": "DAY", "check": "Number" }
+                    ],
+                    "message2": "時 %1 分 %2 秒 %3",
+                    "args2": [
                         { "type": "input_value", "name": "HOUR", "check": "Number" },
                         { "type": "input_value", "name": "MINUTE", "check": "Number" },
                         { "type": "input_value", "name": "SECOND", "check": "Number" }
                     ],
                     "output": "tm",
                     "colour": "#eac800",
-                    "tooltip": "Creates a time structure with the given values.",
+                    "tooltip": "用給予值創建一個時間結構",
                     "helpUrl": "",
+                    "inputsInline": false,
                     "previousStatement": null,
                     "nextStatement": null
                 },
@@ -2335,7 +2334,7 @@
                     ],
                     "output": "Number",
                     "colour": "#eac800",
-                    "tooltip": "Reads a specific member from a time structure.",
+                    "tooltip": "從時間結構中讀取特定數值",
                     "helpUrl": "",
                     "previousStatement": null,
                     "nextStatement": null
@@ -2345,7 +2344,7 @@
                     "message0": "取得本地目前時間",
                     "output": "tm",
                     "colour": "#eac800",
-                    "tooltip": "Returns the current local time as a tm structure.",
+                    "tooltip": "以一個tm結構回傳本地目前時間",
                     "helpUrl": "",
                     "previousStatement": null,
                     "nextStatement": null
@@ -2355,7 +2354,7 @@
                     "message0": "取得準確 UTC 時間",
                     "output": "tm",
                     "colour": "#eac800",
-                    "tooltip": "Returns the current UTC time as a tm structure.",
+                    "tooltip": "一個tm結構回傳準確的UTC時間",
                     "helpUrl": "",
                     "previousStatement": null,
                     "nextStatement": null
@@ -2374,7 +2373,7 @@
                                 ["浮點數", "float"],
                                 ["雙重浮點數", "double"],
                                 ["字元", "char"],
-                                ["字串", "std::string"],
+                                ["字串", "string"],
                                 ["更長的整數", "long long"]
                             ]
                         },
@@ -2394,7 +2393,7 @@
                     "colour" : "#f9943b",
                     "previousStatement" : null,
                     "nextStatement" : null,
-                    "tooltip" : "create a set, set is a ordered list",
+                    "tooltip" : "建立一個集合，集合是一個有序列表",
                     "helpurl" : ""
                 },
                 { //set insert
@@ -2413,7 +2412,7 @@
                     "colour" : "#f9943b",
                     "previousStatement" : null,
                     "nextStatement" : null,
-                    "tooltip" : "insert value to set",
+                    "tooltip" : "插入元素",
                     "helpurl" : ""
                 },
                 { //set erase
@@ -2432,12 +2431,12 @@
                     "colour" : "#f9943b",
                     "previousStatement" : null,
                     "nextStatement" : null,
-                    "tooltip" : "insert value to set",
+                    "tooltip" : "刪除元素",
                     "helpurl" : ""
                 },
                 { //set begin
                     "type" : "set_begin",
-                    "message0" : "set %1 的第一個(begin)",
+                    "message0" : "set %1 (begin)",
                     "args0" : [
                         {
                             "type" : "field_input",
@@ -2448,11 +2447,12 @@
                     ],
                     "colour" : "#778899",
                     "output" : null,
+                    "tooltip": "返回容器開始處的迭代器",
                     "helpUrl": ""
                 },
                 { //set end
                     "type" : "set_end",
-                    "message0" : "set %1 的最後一個(end)",
+                    "message0" : "set %1 (end)",
                     "args0" : [
                         {
                             "type" : "field_input",
@@ -2463,6 +2463,7 @@
                     ],
                     "colour" : "#778899",
                     "output" : null,
+                    "tooltip": "返回容器結束處的迭代器",
                     "helpUrl": ""
                 },
                 { //set empty
@@ -2476,11 +2477,12 @@
                     ],
                     "colour" : "#f9943b",
                     "output" : null,
+                    "tooltip": "檢查容器是否為空",
                     "helpUrl": ""
                 },
                 { //set find
                     "type" : "set_find",
-                    "message0" : "set: %1 中尋找有沒有 %2 (key)值",
+                    "message0" : "set: %1 中尋找有沒有 %2值",
                     "args0" : [
                         {
                             "type" : "field_input",
@@ -2493,7 +2495,7 @@
                     ],
                     "colour" : "#f9943b",
                     "output" : null,
-                    "tooltip": "find value in set\nif find the key return value",
+                    "tooltip": "搜到特定值的元素",
                     "helpUrl": ""
                 },
 
@@ -2526,7 +2528,7 @@
                     "colour" : "#3cb371",
                     "previousStatement" : null,
                     "nextStatement" : null,
-                    "tooltip" : "sort array"
+                    "tooltip" : "陣列排序"
                 },
                 { //algorithm max
                     "type" : "max",
@@ -2556,7 +2558,7 @@
                     "colour" : "#3cb371",
                     "previousStatement" : null,
                     "nextStatement" : null,
-                    "tooltip" : "search maximum element in array"
+                    "tooltip" : "在陣列中搜尋最大元素"
                 },
                 { //algorithm min
                     "type" : "min",
@@ -2586,7 +2588,7 @@
                     "colour" : "#3cb371",
                     "previousStatement" : null,
                     "nextStatement" : null,
-                    "tooltip" : "search minimum element in array"
+                    "tooltip" : "在陣列中搜尋最小元素"
                 },
                 { //algorithm find
                     "type" : "find",
@@ -2620,7 +2622,7 @@
                     "colour" : "#3cb371",
                     "previousStatement" : null,
                     "nextStatement" : null,
-                    "tooltip" : "sort array"
+                    "tooltip" : "在陣列中尋找元素"
                 },
                 
             ]
@@ -2638,7 +2640,7 @@
                 this.setNextStatement(true);
                 this.setMutator(new Blockly.Mutator(['elif_mutator', 'else_mutator']));
                 this.setColour("#00abea");
-                this.setTooltip("If 語句");
+                this.setTooltip("If 判斷式");
                 this.setHelpUrl("");
                 this.elifCount_ = 0;
                 this.hasElse_ = false;
@@ -2818,7 +2820,7 @@
                 this.setNextStatement(true);
                 this.setMutator(new Blockly.Mutator(['case_mutator']));
                 this.setColour("#00abea");
-                this.setTooltip("Switch 語句");
+                this.setTooltip("Switch 判斷式");
                 this.setHelpUrl("");
                 this.caseCount_ = 0;
             },
@@ -3157,47 +3159,47 @@
 
         // 數學運算代碼生成
         Blockly.Cpp['math_plus'] = function (block) {
-            return generateCode(block, ' + ');
+            return math_generateCode(block, ' + ');
         };
 
         Blockly.Cpp['math_multiply'] = function (block) {
-            return generateCode(block, ' * ');
+            return math_generateCode(block, ' * ');
         };
 
         Blockly.Cpp['math_percent'] = function (block) {
-            return generateCode(block, ' % ');
+            return math_generateCode(block, ' % ');
         };
 
         Blockly.Cpp['math_devide'] = function (block) {
-            return generateCode(block, ' / ');
+            return math_generateCode(block, ' / ');
         };
 
         Blockly.Cpp['math_subtract'] = function (block) {
-            return generateCode(block, ' - ');
+            return math_generateCode(block, ' - ');
         };
 
         // 字串運算代碼生成
         Blockly.Cpp['string_plus'] = function (block) {
-            return generateCode(block, ' + ');
+            return string_generateCode(block, ' + ');
         };
 
         Blockly.Cpp['string_commas'] = function (block) {
-            return generateCode(block, ' , ');
+            return string_generateCode(block, ' , ');
         };
 
         Blockly.Cpp['string_cout'] = function (block) {
-            return generateCode(block, ' << ');
+            return string_generateCode(block, ' << ');
         };
 
         Blockly.Cpp['string_cin'] = function (block) {
-            return generateCode(block, ' >> ');
+            return string_generateCode(block, ' >> ');
         };
 
-        // 通用代碼生成函數
-        function generateCode(block, operator) {
+        // 生成函數
+        function math_generateCode(block, operator) {
             let code = '';
             for (let i = 0; i < block.itemCount_; i++) {
-                let argument = Blockly.Cpp.valueToCode(block, 'ADD' + i, Blockly.Cpp.ORDER_ATOMIC) || '""';
+                let argument = Blockly.Cpp.valueToCode(block, 'ADD' + i, Blockly.Cpp.ORDER_ATOMIC) || '';
                 if (argument.startsWith('(') && argument.endsWith(')')) {
                     argument = argument.slice(1, -1);
                 }
@@ -3210,6 +3212,24 @@
 
 
             return [`(${code})`, Blockly.Cpp.ORDER_ATOMIC];
+        }
+
+        function string_generateCode(block, operator) {
+            let code = '';
+            for (let i = 0; i < block.itemCount_; i++) {
+                let argument = Blockly.Cpp.valueToCode(block, 'ADD' + i, Blockly.Cpp.ORDER_ATOMIC) || '';
+                if (argument.startsWith('(') && argument.endsWith(')')) {
+                    argument = argument.slice(1, -1);
+                }
+
+                    code += argument;
+                if (i < block.itemCount_ - 1) {
+                    code += operator;
+                }
+            }
+
+
+            return [`${code}`, Blockly.Cpp.ORDER_ATOMIC];
         }
 
         //struct
@@ -3242,7 +3262,6 @@
 
             return code;
         };
-
  
         Blockly.Cpp['get_class'] = function(block) {
             var class_name = block.getFieldValue('class_name');
@@ -3252,7 +3271,7 @@
 
         //data
         Blockly.Cpp['add_line'] = function(block) {
-            return [`\n`, 1];
+            return [`\\n`, 1];
         };
 
         Blockly.Cpp['tab'] = function(block) {
@@ -3274,11 +3293,11 @@
 
         //initializaiton
         Blockly.Cpp['boost_ios_sync'] = function(block) {
-            return 'std::ios::sync_with_stdio(0);\n';
+            return 'ios::sync_with_stdio(0);\n';
         };
 
         Blockly.Cpp['boost_cin_cout_tie'] = function(block) {
-            return 'std::cin.tie(0); std::cout.tie(0);\n';
+            return 'cin.tie(0); cout.tie(0);\n';
         };
 
         Blockly.Cpp['include_bits/stdc++.h'] = function(block) {
@@ -3304,13 +3323,18 @@
         };
 
         Blockly.Cpp['return_block'] = function(block) {
-            var returnValue = Blockly.Cpp.valueToCode(block, 'RETURN_VALUE', 1) || '0';
-            return `return ${returnValue};\n`;
-        };
+            var returnValue = Blockly.Cpp.valueToCode(block, 'RETURN_VALUE', 1);
 
-        Blockly.Cpp['return_no_out'] = function(block) {
-            var code = 'return'
-            return [code, 1];
+            if (returnValue.startsWith('(') && returnValue.endsWith(')')) {
+                returnValue = returnValue.slice(1, -1);
+            }
+
+            if (returnValue === "") {
+                return `return;`
+            }
+            else {
+                return `return ${returnValue};\n`;
+            }
         };
 
         //condition
@@ -3357,7 +3381,7 @@
                 value_var = value_var.slice(1, -1);
             }
 
-            return `std::cin >> ${value_var};\n`;
+            return `cin >> ${value_var};\n`;
         };
 
         Blockly.Cpp['cout_block'] = function(block) {
@@ -3376,9 +3400,9 @@
             }
 
             if (block.getFieldValue('ENDL_OPTION') === "endl") {
-                return `std::cout << ${argument} << std::endl;\n`;
+                return `cout << ${argument} << endl;\n`;
             } else {
-                return `std::cout << ${argument};\n`;
+                return `cout << ${argument};\n`;
             }
         };
 
@@ -3684,7 +3708,7 @@
                 expression = expression.slice(1, -1);
             }
 
-            return `${Type} ${funcName}(${data}){\n${content}  return ${expression};\n}\n`;
+            return `${Type} ${funcName}(${data}) {\n${content}  return ${expression};\n}\n`;
         };
         
         Blockly.Cpp['function_definition_void'] = function(block) {
@@ -3700,10 +3724,10 @@
             }
 
             if (expression === 'no'){
-                return `void ${funcName}(${data}){\n${content}\n}\n`;
+                return `void ${funcName}(${data}) {\n${content}\n}\n`;
             }
             else{
-                return `void ${funcName}(${data}){\n${content}  return\n}\n`;
+                return `void ${funcName}(${data}) {\n${content}  return;\n}\n`;
             }
         };
 
