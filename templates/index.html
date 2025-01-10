@@ -4013,25 +4013,25 @@
 
         Blockly.Cpp['vec_begin'] = function(block) {
             var vec_name = block.getFieldValue('vec_name') || '';
-            var code = vec_name + '.begin()\n';
+            var code = vec_name + '.begin()';
             return [code, 1];
         }
 
         Blockly.Cpp['vec_end'] = function(block) {
             var vec_name = block.getFieldValue('vec_name') || '';
-            var code = vec_name + 'end()\n';
+            var code = vec_name + 'end()';
             return [code, 1];
         }
 
         Blockly.Cpp['vec_rbegin'] = function(block) {
             var vec_name = block.getFieldValue('vec_name') || '';
-            var code = vec_name + '.rbegin()\n';
+            var code = vec_name + '.rbegin()';
             return [code, 1];
         }
 
         Blockly.Cpp['vec_rend'] = function(block) {
             var vec_name = block.getFieldValue('vec_name') || '';
-            var code = vec_name + '.rend()\n';
+            var code = vec_name + '.rend()';
             return [code, 1];
         }
 
@@ -4080,12 +4080,13 @@
 
         Blockly.Cpp['vector_size'] = function(block) {
             var vec_name = block.getFieldValue('vec_name');
-            return vec_name + ".size();\n";
+            var code = vec_name + ".size()";
+            return [code, 1];
         }
 
         Blockly.Cpp['vector_empty'] = function(block) {
             var vec_name = block.getFieldValue('vec_name');
-            var code = vec_name + ".empty\n";
+            var code = vec_name + ".empty";
             return [code, 1];
         }
         
@@ -4109,7 +4110,7 @@
 
         Blockly.Cpp['array_name_block'] = function(block) {
             var array_name = block.getFieldValue('array_name');
-            return [`${array_name}\n`, 1];
+            return [`${array_name}`, 1];
         }
 
         Blockly.Cpp['array_content'] = function(block) {
@@ -4117,7 +4118,7 @@
             if (content.startsWith('(') && content.endsWith(')')) {
                 content = content.slice(1, -1);
             }
-            return [`{${content}}\n`, 1];
+            return [`{${content}}`, 1];
         }
 
         Blockly.Cpp['array[i]'] = function(block) {
@@ -4126,7 +4127,7 @@
             if (pos.startsWith('(') && pos.endsWith(')')){
                 pos = pos.slice(1, -1);
             }
-            var code = `${array_name}[${pos}]\n`;
+            var code = `${array_name}[${pos}]`;
             return [code, 1];
         }
 
@@ -4158,6 +4159,7 @@
             if (map_size || content){
                 code += ')';
             }
+            code += '\n;';
             return code;
         }
 
@@ -4183,41 +4185,42 @@
 
         Blockly.Cpp['map_begin'] = function(block) {
             var map_name = block.getFieldValue('map_name') || '';
-            var code = map_name + '.begin()\n';
+            var code = map_name + '.begin()';
             return [code, 1];
         }
 
         Blockly.Cpp['map_end'] = function(block) {
             var map_name = block.getFieldValue('map_name') || '';
-            var code = map_name + 'end()\n';
+            var code = map_name + 'end()';
             return [code, 1];
         }
 
         Blockly.Cpp['map_rbegin'] = function(block) {
             var map_name = block.getFieldValue('map_name') || '';
-            var code = map_name + '.rbegin()\n';
+            var code = map_name + '.rbegin()';
             return [code, 1];
         }
 
         Blockly.Cpp['map_rend'] = function(block) {
             var map_name = block.getFieldValue('map_name') || '';
-            var code = map_name + '.rend()\n';
+            var code = map_name + '.rend()';
             return [code, 1];
         }
 
         Blockly.Cpp['map_clear'] = function(block) {
             var map_name = block.getFieldValue('map_name');
-            return map_name + ".clear();\n";
+            return map_name + ".clear();";
         };
 
         Blockly.Cpp['map_size'] = function(block) {
             var map_name = block.getFieldValue('map_name');
-            return map_name + ".size();\n";
+            var code =  map_name + ".size();";
+            return [code, 1];
         }
 
         Blockly.Cpp['map_empty'] = function(block) {
             var map_name = block.getFieldValue('map_name');
-            var code = map_name + ".empty\n";
+            var code = map_name + ".empty";
             return [code, 1];
         }
 
@@ -4227,7 +4230,7 @@
             if (key.startsWith('(') && key.endsWith(')')){
                 key = key.slice(1, -1);
             }
-            var code = `${map_name}[${key}].first\n`;
+            var code = `${map_name}[${key}].first`;
             return [code, 1];
         }
         
@@ -4237,7 +4240,7 @@
             if (key.startsWith('(') && key.endsWith(')')){
                 key = key.slice(1, -1);
             }
-            var code = `${map_name}[${key}].second\n`;
+            var code = `${map_name}[${key}].second`;
             return [code, 1];
         }
 
@@ -4247,7 +4250,7 @@
             if (value.startsWith('(') && value.endsWith(')')){
                 value = value.slice(1, -1);
             }
-            var code = `${map_name}.find(${value})\n`;
+            var code = `${map_name}.find(${value})`;
             return [code, 1];
         }
 
@@ -4257,7 +4260,7 @@
             var set_name = block.getFieldValue('set_name');
             var set_size = Blockly.Cpp.valueToCode(block, 'set_size', 1) || '';
             var content = Blockly.Cpp.valueToCode(block, 'set_content', 1) || '';
-            var code = `set<${type}>${set_name}\n`;
+            var code = `set<${type}>${set_name}`;
             if (set_size){
                 if (set_size.startsWith('(') && set_size.endsWith(')')){
                     set_size = set_size.slice(1, -1);
@@ -4278,6 +4281,7 @@
             if (set_size || content){
                 code += ')';
             }
+            code += '\n';
             return code;
         }
 
@@ -4301,19 +4305,19 @@
 
         Blockly.Cpp['set_begin'] = function(block) {
             var set_name = block.getFieldValue('set_name') || '';
-            var code = set_name + '.begin()\n';
+            var code = set_name + '.begin()';
             return [code, 1];
         }
 
         Blockly.Cpp['set_end'] = function(block) {
             var set_name = block.getFieldValue('set_name') || '';
-            var code = set_name + 'end()\n';
+            var code = set_name + 'end()';
             return [code, 1];
         }
 
         Blockly.Cpp['set_empty'] = function(block) {
             var set_name = block.getFieldValue('set_name');
-            var code = set_name + ".empty\n";
+            var code = set_name + ".empty";
             return [code, 1];
         }
 
@@ -4323,7 +4327,7 @@
             if (value.startsWith('(') && value.endsWith(')')){
                 value = value.slice(1, -1);
             }
-            var code = `${set_name}.find(${value})\n`;
+            var code = `${set_name}.find(${value})`;
             return [code, 1];
         }
 
@@ -4375,10 +4379,10 @@
             }
 
             if (type === "內建陣列"){
-                return `*max_element(${name}+${start}, ${name}+${end})\n`;
+                return `*max_element(${name}${start}, ${name}+${end})\n`;
             }
             else{
-                return `*max_element(${name}.begin()+${start}, ${name}.begin()+${end})\n`;
+                return `*max_element(${name}.begin()${start}, ${name}.begin()+${end})\n`;
             }
         }
 
@@ -4402,10 +4406,10 @@
             }
 
             if (type === "內建陣列"){
-                return `*min_element(${name}+${start}, ${name}+${end})\n`;
+                return `*min_element(${name}${start}, ${name}+${end})\n`;
             }
             else{
-                return `*min_element(${name}.begin()+${start}, ${name}.begin()+${end})\n`;
+                return `*min_element(${name}.begin()${start}, ${name}.begin()+${end})\n`;
             }
         }
 
