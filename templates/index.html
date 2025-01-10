@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-tw">
 <head>
@@ -13,6 +12,32 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
     <title>C++ Blockly</title>
     <style>
+        #searchContainer {
+            padding: 10px;
+            background-color: #343a40;
+            display: flex;
+            width: 680px;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #searchInput {
+            flex-grow: 1;
+            width: 150%;
+            padding: 5px;
+            font-size: 14px;
+        }
+
+        #searchButton {
+            padding: 5px 10px;
+            font-size: 14px;
+            cursor: pointer;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+
         /* 改變工具箱顏色 */
         .blocklyToolboxDiv {
             background-color: rgba(187, 187, 187, 0.9) !important;
@@ -213,6 +238,10 @@
     <header>
         <h1>C++ Blockly</h1>
         <div class="file-info"></div>
+        <div id="searchContainer">
+            <input type="text" id="searchInput" placeholder="Search for blocks(type ID ONLY)...">
+            <button id="searchButton">Search</button>
+        </div>
         <div class="actions">
             <button class="compile" id="c">編譯</button>
             <button class="run" id="r">執行</button>
@@ -276,6 +305,77 @@
         }
 
         document.getElementById('toggle-button').textContent = "切換模式";
+
+        let clearSearchTimeout;
+
+        function findBlocksRecursively(contents, searchTerms) {
+            const results = [];
+            contents.forEach(item => {
+                if (item.kind === 'block' && item.type) {
+                    if (searchTerms.some(term => item.type.toLowerCase().includes(term))) {
+                        results.push(item);
+                    }
+                } else if (item.kind === 'category' && item.contents) {
+                    results.push(...findBlocksRecursively(item.contents, searchTerms));
+                }
+            });
+            return results;
+        }
+
+        document.getElementById('searchButton').addEventListener('click', () => {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+
+            if (!searchTerm) {
+                alert('Please enter a search term.');
+                return;
+            }
+
+            const searchTerms = searchTerm.split(',').map(term => term.trim());
+            const searchResults = findBlocksRecursively(toolbox.contents, searchTerms);
+
+            // 更新或新增 "Search" 分類
+            const updatedToolbox = JSON.parse(JSON.stringify(toolbox));
+            const searchCategoryIndex = updatedToolbox.contents.findIndex(
+                category => category.name === 'Search'
+            );
+
+            const searchCategory = {
+                kind: "category",
+                name: "Search",
+                contents: []
+            };
+
+            if (searchResults.length > 0) {
+                searchResults.forEach(block => {
+                    searchCategory.contents.push({ kind: "block", type: block.type });
+                });
+            } else {
+                searchCategory.contents.push({ kind: "label", text: "No results found" });
+            }
+
+            if (searchCategoryIndex !== -1) {
+                updatedToolbox.contents[searchCategoryIndex] = searchCategory;
+            } else {
+                updatedToolbox.contents.push(searchCategory);
+            }
+
+            workspace.updateToolbox(updatedToolbox);
+
+            if (clearSearchTimeout) {
+                clearTimeout(clearSearchTimeout);
+            }
+
+            clearSearchTimeout = setTimeout(() => {
+                const emptySearchCategory = {
+                    kind: "category",
+                    name: "Search",
+                    contents: []
+                };
+                updatedToolbox.contents[searchCategoryIndex] = emptySearchCategory;
+                workspace.updateToolbox(updatedToolbox);
+            }, 100);
+        });
+
 
     </script>
 
@@ -2047,7 +2147,6 @@
                     ],
                     "colour": "#778899",
                     "output": null,
-                    "tooltip": "",
                     "helpUrl": ""
                 },
                 { //map clear
@@ -2061,7 +2160,7 @@
                     "inputsInline": true,
                     "previousStatement": null,
                     "nextStatement": null,
-                    "tooltip": "清空map陣列",
+                    "tooltip": "map size",
                     "helpUrl": ""
                 },
                 { //map size
@@ -2074,7 +2173,7 @@
                     "colour": "#20b2aa",
                     "inputsInline": true,
                     "output": null,
-                    "tooltip": "map陣列大小",
+                    "tooltip": "map size",
                     "helpUrl": ""
                 },
                 { //map empty
@@ -2088,7 +2187,6 @@
                 ],
                 "colour": "#20b2aa",
                 "output" : null,
-                "tooltip" : "判斷是否為空",
                 "helpUrl": ""
                 },
                 { //map first
@@ -2106,7 +2204,7 @@
                     ],
                     "output" : null,
                     "colour": "#20b2aa",
-                    "tooltip": "取map中的key(first)",
+                    "tooltip": "map key(first)",
                     "helpUrl": ""
                 },
                 { //map second
@@ -2124,7 +2222,7 @@
                     ],
                     "output" : null,
                     "colour": "#20b2aa",
-                    "tooltip": "取map的value(second)",
+                    "tooltip": "map value(second)",
                     "helpUrl": ""
                 },
                 { //map find
@@ -2208,7 +2306,7 @@
                     }],
                     "colour": "#ff5757",
                     "output": null,
-                    "tooltip": "矩陣中的元素",
+                    "tooltip": "矩陣內容",
                     "helpurl": ""
                 },
                 { //array[i]
@@ -2226,7 +2324,7 @@
                     ],
                     "colour": "#ff5757",
                     "output": null,
-                    "tooltip": "矩陣i 位置的值",
+                    "tooltip": "矩陣名稱",
                     "helpurl": ""
                 },
 
@@ -2482,7 +2580,7 @@
                 },
                 { //set find
                     "type" : "set_find",
-                    "message0" : "set: %1 中尋找有沒有 %2值",
+                    "message0" : "set: %1 中尋找有沒有 %2 (key)值",
                     "args0" : [
                         {
                             "type" : "field_input",
@@ -2495,7 +2593,7 @@
                     ],
                     "colour" : "#f9943b",
                     "output" : null,
-                    "tooltip": "搜到特定值的元素",
+                    "tooltip": "搜到特定鍵值的元素",
                     "helpUrl": ""
                 },
 
@@ -3914,25 +4012,25 @@
 
         Blockly.Cpp['vec_begin'] = function(block) {
             var vec_name = block.getFieldValue('vec_name') || '';
-            var code = vec_name + '.begin()';
+            var code = vec_name + '.begin()\n';
             return [code, 1];
         }
 
         Blockly.Cpp['vec_end'] = function(block) {
             var vec_name = block.getFieldValue('vec_name') || '';
-            var code = vec_name + 'end()';
+            var code = vec_name + 'end()\n';
             return [code, 1];
         }
 
         Blockly.Cpp['vec_rbegin'] = function(block) {
             var vec_name = block.getFieldValue('vec_name') || '';
-            var code = vec_name + '.rbegin()';
+            var code = vec_name + '.rbegin()\n';
             return [code, 1];
         }
 
         Blockly.Cpp['vec_rend'] = function(block) {
             var vec_name = block.getFieldValue('vec_name') || '';
-            var code = vec_name + '.rend()';
+            var code = vec_name + '.rend()\n';
             return [code, 1];
         }
 
@@ -3952,7 +4050,7 @@
                     value = value.slice(1, -1);
             }
             
-            return `${vec_name}.insert(${vec_name}.begin()+${pos}, ${value})`; 
+            return `${vec_name}.insert(${vec_name}.begin()+${pos}, ${value})\n`; 
         }
 
         Blockly.Cpp['vector_erase'] = function(block) {
@@ -3971,7 +4069,7 @@
                     value = value.slice(1, -1);
             }
             
-            return `${vec_name}.insert(${vec_name}.begin()+${pos}, ${value})`; 
+            return `${vec_name}.insert(${vec_name}.begin()+${pos}, ${value})\n`; 
         }
 
         Blockly.Cpp['vector_clear'] = function(block) {
@@ -3986,7 +4084,7 @@
 
         Blockly.Cpp['vector_empty'] = function(block) {
             var vec_name = block.getFieldValue('vec_name');
-            var code = vec_name + ".empty";
+            var code = vec_name + ".empty\n";
             return [code, 1];
         }
         
@@ -4005,12 +4103,12 @@
             if (content.startsWith('(') && content.endsWith(')')) {
                 content = content.slice(1, -1);
             }
-            return `${type} ${array_name}[${size}] = ${content};`
+            return `${type} ${array_name}[${size}] = ${content};\n`
         }
 
         Blockly.Cpp['array_name_block'] = function(block) {
             var array_name = block.getFieldValue('array_name');
-            return [array_name, 1];
+            return [`${array_name}\n`, 1];
         }
 
         Blockly.Cpp['array_content'] = function(block) {
@@ -4018,7 +4116,7 @@
             if (content.startsWith('(') && content.endsWith(')')) {
                 content = content.slice(1, -1);
             }
-            return [`{${content}}`, 1];
+            return [`{${content}}\n`, 1];
         }
 
         Blockly.Cpp['array[i]'] = function(block) {
@@ -4027,7 +4125,7 @@
             if (pos.startsWith('(') && pos.endsWith(')')){
                 pos = pos.slice(1, -1);
             }
-            var code = `${array_name}[${pos}]`;
+            var code = `${array_name}[${pos}]\n`;
             return [code, 1];
         }
 
@@ -4038,7 +4136,7 @@
             var map_name = block.getFieldValue('map_name');
             var map_size = Blockly.Cpp.valueToCode(block, 'map_size', 1);
             var content = Blockly.Cpp.valueToCode(block, 'content', 1);
-            var code = `map<${type1}, ${type2}>${map_name}`;
+            var code = `map<${type1}, ${type2}>${map_name}\n`;
             if (map_size){
                 if (map_size.startsWith('(') && map_size.endsWith(')')){
                     map_size = map_size.slice(1, -1);
@@ -4072,37 +4170,37 @@
             if (second.startsWith('(') && second.endsWith(')')){
                 second = second.slice(1, -1);
             }
-            return `${map_name}.insert({${first}, ${second}})`;
+            return `${map_name}.insert({${first}, ${second}})\n`;
         }
 
         Blockly.Cpp['map[i]'] = function(block) {
             var map_name = block.getFieldValue('map_name');
             var map_key = block.getFieldValue('map_key');
             var map_value = block.getFieldValue('map_value');
-            return `${map_name}[${map_key}] = ${map_value}`;
+            return `${map_name}[${map_key}] = ${map_value}\n`;
         }        
 
         Blockly.Cpp['map_begin'] = function(block) {
             var map_name = block.getFieldValue('map_name') || '';
-            var code = map_name + '.begin()';
+            var code = map_name + '.begin()\n';
             return [code, 1];
         }
 
         Blockly.Cpp['map_end'] = function(block) {
             var map_name = block.getFieldValue('map_name') || '';
-            var code = map_name + 'end()';
+            var code = map_name + 'end()\n';
             return [code, 1];
         }
 
         Blockly.Cpp['map_rbegin'] = function(block) {
             var map_name = block.getFieldValue('map_name') || '';
-            var code = map_name + '.rbegin()';
+            var code = map_name + '.rbegin()\n';
             return [code, 1];
         }
 
         Blockly.Cpp['map_rend'] = function(block) {
             var map_name = block.getFieldValue('map_name') || '';
-            var code = map_name + '.rend()';
+            var code = map_name + '.rend()\n';
             return [code, 1];
         }
 
@@ -4118,7 +4216,7 @@
 
         Blockly.Cpp['map_empty'] = function(block) {
             var map_name = block.getFieldValue('map_name');
-            var code = map_name + ".empty";
+            var code = map_name + ".empty\n";
             return [code, 1];
         }
 
@@ -4128,7 +4226,7 @@
             if (key.startsWith('(') && key.endsWith(')')){
                 key = key.slice(1, -1);
             }
-            var code = `${map_name}[${key}].first`;
+            var code = `${map_name}[${key}].first\n`;
             return [code, 1];
         }
         
@@ -4138,7 +4236,7 @@
             if (key.startsWith('(') && key.endsWith(')')){
                 key = key.slice(1, -1);
             }
-            var code = `${map_name}[${key}].second`;
+            var code = `${map_name}[${key}].second\n`;
             return [code, 1];
         }
 
@@ -4148,7 +4246,7 @@
             if (value.startsWith('(') && value.endsWith(')')){
                 value = value.slice(1, -1);
             }
-            var code = `${map_name}.find(${value})`;
+            var code = `${map_name}.find(${value})\n`;
             return [code, 1];
         }
 
@@ -4158,7 +4256,7 @@
             var set_name = block.getFieldValue('set_name');
             var set_size = Blockly.Cpp.valueToCode(block, 'set_size', 1) || '';
             var content = Blockly.Cpp.valueToCode(block, 'set_content', 1) || '';
-            var code = `set<${type}>${set_name}`;
+            var code = `set<${type}>${set_name}\n`;
             if (set_size){
                 if (set_size.startsWith('(') && set_size.endsWith(')')){
                     set_size = set_size.slice(1, -1);
@@ -4188,7 +4286,7 @@
             if (value.startsWith('(') && value.endsWith(')')){
                 value = value.slice(1, -1);
             }
-            return `${set_name}.insert(${value})`;
+            return `${set_name}.insert(${value})\n`;
         }
 
         Blockly.Cpp['set_erase'] = function(block) {
@@ -4197,24 +4295,24 @@
             if (value.startsWith('(') && value.endsWith(')')){
                 value = value.slice(1, -1);
             }
-            return `${set_name}.insert(${value})`;
+            return `${set_name}.insert(${value})\n`;
         }
 
         Blockly.Cpp['set_begin'] = function(block) {
             var set_name = block.getFieldValue('set_name') || '';
-            var code = set_name + '.begin()';
+            var code = set_name + '.begin()\n';
             return [code, 1];
         }
 
         Blockly.Cpp['set_end'] = function(block) {
             var set_name = block.getFieldValue('set_name') || '';
-            var code = set_name + 'end()';
+            var code = set_name + 'end()\n';
             return [code, 1];
         }
 
         Blockly.Cpp['set_empty'] = function(block) {
             var set_name = block.getFieldValue('set_name');
-            var code = set_name + ".empty";
+            var code = set_name + ".empty\n";
             return [code, 1];
         }
 
@@ -4224,7 +4322,7 @@
             if (value.startsWith('(') && value.endsWith(')')){
                 value = value.slice(1, -1);
             }
-            var code = `${set_name}.find(${value})`;
+            var code = `${set_name}.find(${value})\n`;
             return [code, 1];
         }
 
@@ -4387,7 +4485,7 @@
         Blockly.Cpp['read_time_structure_member'] = function(block) {
             var timeStruct = Blockly.Cpp.valueToCode(block, 'TIME_STRUCT', Blockly.Cpp.ORDER_ATOMIC) || 'tm';
             var member = block.getFieldValue('MEMBER') || 'tm_year';
-            return timeStruct + '.' + member;
+            return timeStruct + '.' + member + '\n';
         };
 
         Blockly.Cpp['get_current_local_time'] = function(block) {
