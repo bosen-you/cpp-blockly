@@ -419,6 +419,7 @@
                       {"kind": "block", "type": "vector_clear"},
                       {"kind": "block", "type": "vector_size"},
                       {"kind": "block", "type": "vector_empty"},
+
                       {"kind": "label", "text": "Vector 迭代器"},
                       {"kind": "block", "type": "vec_begin"},
                       {"kind": "block", "type": "vec_end"},
@@ -436,6 +437,7 @@
                       {"kind": "block", "type": "set_erase"},
                       {"kind": "block", "type": "set_empty"},
                       {"kind": "block", "type": "set_find"},
+
                       {"kind": "label", "text": "set 迭代器"},
                       {"kind": "block", "type": "set_begin"},
                       {"kind": "block", "type": "set_end"}
@@ -466,7 +468,9 @@
                       {"kind": "block", "type": "map_first"},
                       {"kind": "block", "type": "map_second"},
                       {"kind": "block", "type": "map_find"},
+
                       {"kind": "label", "text": "map 迭代器"},
+
                       {"kind": "block", "type": "map_begin"},
                       {"kind": "block", "type": "map_end"},
                       {"kind": "block", "type": "map_rbegin"},
@@ -561,6 +565,7 @@
                   {"kind": "label", "text": "Struct"},
                   {"kind": "block", "type": "def_struct"},
                   {"kind": "block", "type": "get_struct"},
+
                   {"kind": "label", "text": "Class"},
                   {"kind": "block", "type": "def_class"},
                   {"kind": "block", "type": "get_class"}
@@ -575,6 +580,7 @@
                   {"kind": "block", "type": "add_line"},
                   {"kind": "block", "type": "tab"},
                   {"kind": "block", "type": "comment_block"},
+
                   {"kind": "label", "text": "擴充模組"},
                   {"kind": "block", "type": "string_plus"},
                   {"kind": "block", "type": "string_commas"}
@@ -587,9 +593,11 @@
                 "contents": [
                   {"kind": "block", "type": "cin_block"},
                   {"kind": "block", "type": "cout_block"},
+
                   {"kind": "label", "text": "解除限制"},
                   {"kind": "block", "type": "boost_ios_sync"},
                   {"kind": "block", "type": "boost_cin_cout_tie"},
+
                   {"kind": "label", "text": "擴充模組"},
                   {"kind": "block", "type": "string_cin"},
                   {"kind": "block", "type": "string_cout"}
@@ -608,6 +616,7 @@
                   {"kind": "block", "type": "false"},
                   {"kind": "block", "type": "true"},
                   {"kind": "block", "type": "logic_not"},
+
                   {"kind": "label", "text": "擴充模組"},
                   {"kind": "block", "type": "math_plus"},
                   {"kind": "block", "type": "math_multiply"},
@@ -4080,13 +4089,12 @@
 
         Blockly.Cpp['vector_size'] = function(block) {
             var vec_name = block.getFieldValue('vec_name');
-            var code = vec_name + ".size()";
-            return [code, 1];
+            return vec_name + ".size();\n";
         }
 
         Blockly.Cpp['vector_empty'] = function(block) {
             var vec_name = block.getFieldValue('vec_name');
-            var code = vec_name + ".empty";
+            var code = vec_name + ".empty\n";
             return [code, 1];
         }
         
@@ -4159,7 +4167,6 @@
             if (map_size || content){
                 code += ')';
             }
-            code += '\n;';
             return code;
         }
 
@@ -4185,37 +4192,36 @@
 
         Blockly.Cpp['map_begin'] = function(block) {
             var map_name = block.getFieldValue('map_name') || '';
-            var code = map_name + '.begin()';
+            var code = map_name + '.begin()\n';
             return [code, 1];
         }
 
         Blockly.Cpp['map_end'] = function(block) {
             var map_name = block.getFieldValue('map_name') || '';
-            var code = map_name + 'end()';
+            var code = map_name + 'end()\n';
             return [code, 1];
         }
 
         Blockly.Cpp['map_rbegin'] = function(block) {
             var map_name = block.getFieldValue('map_name') || '';
-            var code = map_name + '.rbegin()';
+            var code = map_name + '.rbegin()\n';
             return [code, 1];
         }
 
         Blockly.Cpp['map_rend'] = function(block) {
             var map_name = block.getFieldValue('map_name') || '';
-            var code = map_name + '.rend()';
+            var code = map_name + '.rend()\n';
             return [code, 1];
         }
 
         Blockly.Cpp['map_clear'] = function(block) {
             var map_name = block.getFieldValue('map_name');
-            return map_name + ".clear();";
+            return map_name + ".clear();\n";
         };
 
         Blockly.Cpp['map_size'] = function(block) {
             var map_name = block.getFieldValue('map_name');
-            var code =  map_name + ".size();";
-            return [code, 1];
+            return map_name + ".size();";
         }
 
         Blockly.Cpp['map_empty'] = function(block) {
@@ -4260,7 +4266,7 @@
             var set_name = block.getFieldValue('set_name');
             var set_size = Blockly.Cpp.valueToCode(block, 'set_size', 1) || '';
             var content = Blockly.Cpp.valueToCode(block, 'set_content', 1) || '';
-            var code = `set<${type}>${set_name}`;
+            var code = `set<${type}>${set_name}\n`;
             if (set_size){
                 if (set_size.startsWith('(') && set_size.endsWith(')')){
                     set_size = set_size.slice(1, -1);
@@ -4281,7 +4287,6 @@
             if (set_size || content){
                 code += ')';
             }
-            code += '\n';
             return code;
         }
 
@@ -4317,7 +4322,7 @@
 
         Blockly.Cpp['set_empty'] = function(block) {
             var set_name = block.getFieldValue('set_name');
-            var code = set_name + ".empty";
+            var code = set_name + ".empty\n";
             return [code, 1];
         }
 
@@ -4327,7 +4332,7 @@
             if (value.startsWith('(') && value.endsWith(')')){
                 value = value.slice(1, -1);
             }
-            var code = `${set_name}.find(${value})`;
+            var code = `${set_name}.find(${value})\n`;
             return [code, 1];
         }
 
@@ -4379,10 +4384,10 @@
             }
 
             if (type === "內建陣列"){
-                return `*max_element(${name}${start}, ${name}+${end})\n`;
+                return `*max_element(${name}+${start}, ${name}+${end})\n`;
             }
             else{
-                return `*max_element(${name}.begin()${start}, ${name}.begin()+${end})\n`;
+                return `*max_element(${name}.begin()+${start}, ${name}.begin()+${end})\n`;
             }
         }
 
@@ -4406,10 +4411,10 @@
             }
 
             if (type === "內建陣列"){
-                return `*min_element(${name}${start}, ${name}+${end})\n`;
+                return `*min_element(${name}+${start}, ${name}+${end})\n`;
             }
             else{
-                return `*min_element(${name}.begin()${start}, ${name}.begin()+${end})\n`;
+                return `*min_element(${name}.begin()+${start}, ${name}.begin()+${end})\n`;
             }
         }
 
