@@ -456,7 +456,7 @@
                   },
                   { // map
                     "kind": "category",
-                    "name": "陣列 Map",
+                    "name": "字典 Map",
                     "colour": "#1AA197",
                     "contents": [
                       {"kind": "block", "type": "create_map"},
@@ -486,6 +486,17 @@
                       {"kind": "block", "type": "max"},
                       {"kind": "block", "type": "min"},
                       {"kind": "block", "type": "find"}
+                    ]
+                  },
+                  {// iomanip
+                    "kind": "category",
+                    "name": " 控制輸出格式 iomanip",
+                    "colour": "#EBEB00",
+                    "contents": [
+                      {"kind": "block", "type": "setbase"},
+                      {"kind": "block", "type": "setprecision"},
+                      {"kind": "block", "type": "setw"},
+                      {"kind": "block", "type": "setfill"}
                     ]
                   },
                   { // math
@@ -2730,7 +2741,64 @@
                     "nextStatement" : null,
                     "tooltip" : "在陣列中尋找元素"
                 },
-                
+                // iomanip
+                {// setbase 
+                  "type": "setbase",
+                  "message0": "更改數字為%1",
+                  "args0": [{
+                    "type": "field_dropdown",
+                    "name": "carry",
+                    "options":[
+                      ["二進位制", "2"],
+                      ["八進位制", "10"],
+                      ["十進位制", "10"],
+                      ["十六進位制", "16"]
+                    ],
+                  }],
+                  "output": null,
+                  "colour": #EBEB00,
+                  "tooltip": "轉換數字進位制"
+                },
+                {
+                  "type": "setprecision",
+                  "message0": "取 %1 %2位",
+                  "args0": [
+                    {
+                      "type": "field_dropdown",
+                      "name": "choice",
+                      "options": [
+                        ["有效位數", "sig_figs"],
+                        ["小數位數", "place"]
+                      ]
+                    },
+                    {
+                      "type": "input_value",
+                      "name": "nunber"
+                    }
+                  ],
+                  "output": null,
+                  "tooltip": "控制輸出位數"
+                },
+                {
+                  "type": "setw",
+                  "message0": "控制輸出 %1 位",
+                  "args0": [{
+                    "type": "input_value",
+                    "name": "number"
+                  }],
+                  "output": null,
+                  "tooltip": "控制輸出位數"
+                },
+                {
+                  "type": "setfill",
+                  "message0": "把setw空格補 %1",
+                  "args0": [{
+                    "type": "input_value",
+                    "name": "strings"
+                  }],
+                  "output": null,
+                  "tooltip": "替換掉setw多出的空格"
+                }
             ]
         );
 
@@ -4503,7 +4571,33 @@
         Blockly.Cpp['get_current_utc_time'] = function(block) {
             return 'time_t currentTime = time(nullptr);\ntm* utcTime = gmtime(&currentTime);\n';
         };
- 
+
+      //iomanip
+        //setbase
+        Blockly.Cpp['setbase'] = function(block) {
+            var code = `setbase(${block.getFieldValue('carry')})`; 
+            return [code, 1]
+        };
+
+        Blockly.Cpp['setprecision'] = function(block) {
+            var code = '';
+            if (choice = block.getFieldValue('choice') === 'sig_figs'){
+                code += 'fixed << ';
+            }
+            code += `setprecision(${Blockly.Cpp.valueToCode(block, 'number', 1)})`
+            return [code, 1];
+        };
+
+        Blockly.Cpp['setw'] = function(block) {
+            var code = `setw(${Blockly.Cpp.valueToCode(block, 'number', 1)})`; 
+            return [code, 1];
+        };
+
+         Blockly.Cpp['setfill'] = function(block) {
+            var code = `setfill(${Blockly.Cpp.valueToCode(block, 'number', 1)})`; 
+            return [code, 1];
+        };
+      
     </script>
 </body>
 </html>
