@@ -1055,12 +1055,8 @@
                 //condition
                 { //for
                     "type": "for_block",
-                    "message0": "初始值 %1 = %2 循環條件 %3 迴圈條件 %4 = %5 執行%6 ",
-                    "args0": [{
-                            "type": "field_input",
-                            "name": "VAR",
-                            "text": "i"
-                        },
+                    "message0": "初始變數值 %1  循環條件 %2 迴圈條件 %3 %4 %5 執行%6 ",
+                    "args0": [
                         {
                             "type": "input_value",
                             "name": "INIT"
@@ -1072,12 +1068,20 @@
                         },
                         {
                             "type": "field_input",
-                            "name": "VAR2",
+                            "name": "VAR1",
                             "text": "i"
                         },
                         {
+                            "type": "field_dropdown",
+                            "name": "equal",
+                            "options": [
+                                ["+=", "+="],
+                                ["-=", "-="]
+                            ]
+                        },
+                        {
                             "type": "input_value",
-                            "name": "CONDITION2"
+                            "name": "number"
                         },
                         {
                             "type": "input_statement",
@@ -3529,9 +3533,8 @@
         };
 
         Blockly.Cpp['for_block'] = function(block) {
-            var varName = block.getFieldValue('VAR');
-            var varName2 = block.getFieldValue('VAR2');
             var init = Blockly.Cpp.valueToCode(block, 'INIT', 1);
+            var varName2 = block.getFieldValue('VAR2');
             var condition = Blockly.Cpp.valueToCode(block, 'CONDITION', 1) || 'false';
             var condition2 = Blockly.Cpp.valueToCode(block, 'CONDITION2', 1) || `${varName} + 1`;
             var statements_body = Blockly.Cpp.statementToCode(block, 'DO')
